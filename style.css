@@ -41,7 +41,8 @@ body{
 .topbar button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
 .topbar button.primary:hover{background:var(--accent-d)}
 .topbar button.danger:hover{background:var(--danger); border-color:var(--danger); color:#fff}
-svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
+/* 圖示只在按鈕內：限定 selector，避免 fill/stroke 繼承洩漏到畫布 SVG 文字 */
+button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
 
 /* ---- tab bar ---- */
 .tabbar{
@@ -140,7 +141,9 @@ input[type=text]{width:100%; font-family:var(--sans)}
   border-radius:var(--radius); box-shadow:0 6px 24px rgba(21,50,74,.08); touch-action:none;
 }
 #board .grid{pointer-events:none}
-#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums}
+#board text{font-family:var(--sans)}
+#board g.furn text{font-weight:500; fill:#334155}
+#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:#5A6B7B}
 #board g.furn,#board g.txt{cursor:move}
 #board g.wall{cursor:move}
 #board.mode-wall{cursor:crosshair}

@@ -23,6 +23,9 @@ const LS = 'roomplanner_v2';
 let doc, state, view = null, fitW = 0, mode = 'select', nextId = 1;
 let selected = [];                 // [{kind,id}]  多選
 let spaceDown = false;
+let showAreas = false;             // 顯示房間面積（不存檔）
+let roomsCache = {key:null, rooms:[]};
+let measure = null;                // 量測線 {x1,y1,x2,y2}（暫態，不存檔）
 
 function blankLayout(name){
   return { name, area:{w:600,h:500}, grid:10, snap:true, walls:[], furniture:[], texts:[], customTypes:[] };
@@ -165,14 +168,56 @@ function handlesSvg(f){          // 單選家具：四角 + 旋轉
     + `<line x1="${cx}" y1="${f.y}" x2="${cx}" y2="${f.y-ro}" stroke="#2563eb" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`
     + `<circle class="handle rot" data-id="${f.id}" data-rot="1" cx="${cx}" cy="${f.y-ro}" r="${hs}"/>`;
 }
+/* 家具線稿 glyph：在 footprint(x,y,w,d) 內畫外形細節（描邊，不含底色 rect） */
+const bed = (x,y,w,d,dbl) => {
+  const m=Math.min(w,d)*0.07, ph=d*0.2;
+  let s=`<rect x="${x+m}" y="${y+m}" width="${w-2*m}" height="${ph}" rx="${ph*0.25}"/>`;
+  s+=`<line x1="${x+m}" y1="${y+ph+m*1.3}" x2="${x+w-m}" y2="${y+ph+m*1.3}"/>`;
+  if(dbl) s+=`<line x1="${x+w/2}" y1="${y+m}" x2="${x+w/2}" y2="${y+ph+m}"/>`;
+  return s;
+};
+const sofa = (x,y,w,d) => {
+  const back=d*0.26, arm=w*0.07;
+  let s=`<rect x="${x+arm}" y="${y+back}" width="${w-2*arm}" height="${d-back-d*0.05}" rx="${Math.min(w,d)*0.06}"/>`;
+  const n=Math.max(2,Math.round((w-2*arm)/65));
+  for(let i=1;i<n;i++){const cx=x+arm+(w-2*arm)*i/n; s+=`<line x1="${cx}" y1="${y+back}" x2="${cx}" y2="${y+d*0.93}"/>`;}
+  return s;
+};
+const table = (x,y,w,d) => `<rect x="${x+w*0.12}" y="${y+d*0.12}" width="${w*0.76}" height="${d*0.76}" rx="2"/>`;
+const wardrobe = (x,y,w,d) => `<line x1="${x+w/2}" y1="${y+d*0.1}" x2="${x+w/2}" y2="${y+d*0.9}"/><circle cx="${x+w/2-w*0.06}" cy="${y+d/2}" r="${Math.min(w,d)*0.035}"/><circle cx="${x+w/2+w*0.06}" cy="${y+d/2}" r="${Math.min(w,d)*0.035}"/>`;
+const fridge = (x,y,w,d) => `<line x1="${x+w*0.12}" y1="${y+d*0.36}" x2="${x+w*0.88}" y2="${y+d*0.36}"/><line x1="${x+w*0.8}" y1="${y+d*0.14}" x2="${x+w*0.8}" y2="${y+d*0.28}"/><line x1="${x+w*0.8}" y1="${y+d*0.46}" x2="${x+w*0.8}" y2="${y+d*0.78}"/>`;
+const toilet = (x,y,w,d) => `<rect x="${x+w*0.12}" y="${y+d*0.03}" width="${w*0.76}" height="${d*0.22}" rx="2"/><ellipse cx="${x+w/2}" cy="${y+d*0.62}" rx="${w*0.33}" ry="${d*0.3}"/>`;
+const bath = (x,y,w,d) => `<rect x="${x+w*0.08}" y="${y+d*0.12}" width="${w*0.84}" height="${d*0.76}" rx="${Math.min(w,d)*0.22}"/><circle cx="${x+w*0.85}" cy="${y+d/2}" r="${Math.min(w,d)*0.045}"/>`;
+const counter = (x,y,w,d) => `<circle cx="${x+w*0.3}" cy="${y+d/2}" r="${Math.min(w,d)*0.24}"/><line x1="${x+w*0.3}" y1="${y+d*0.18}" x2="${x+w*0.3}" y2="${y+d*0.06}"/>`;
+const cabinet = (x,y,w,d) => {let s='';const n=Math.max(2,Math.round(w/60));for(let i=1;i<n;i++){const cx=x+w*i/n;s+=`<line x1="${cx}" y1="${y+d*0.15}" x2="${cx}" y2="${y+d*0.85}"/>`;}return s;};
+const shelf = (x,y,w,d) => {let s='';const n=Math.max(2,Math.round(d/30));for(let i=1;i<n;i++){const cy=y+d*i/n;s+=`<line x1="${x+w*0.1}" y1="${cy}" x2="${x+w*0.9}" y2="${cy}"/>`;}return s;};
+const win = (x,y,w,d) => `<line x1="${x}" y1="${y+d/2}" x2="${x+w}" y2="${y+d/2}"/>`;
+const GLYPH = {
+  '單人床':(x,y,w,d)=>bed(x,y,w,d,false), '雙人床':(x,y,w,d)=>bed(x,y,w,d,true),
+  '沙發':sofa, '茶几':table, '電視櫃':cabinet,
+  '餐桌':table, '冰箱':fridge, '流理台':counter,
+  '衣櫃':wardrobe, '書桌':table, '書櫃':shelf,
+  '馬桶':toilet, '浴缸':bath, '窗':win,
+};
 function furnSvg(f){
   const cx=f.x+f.w/2, cy=f.y+f.d/2;
   const sel = isSel('furniture', f.id);
-  const fs = Math.max(8, Math.min(18, Math.min(f.w,f.d)/3.2));
-  const body = isDoor(f) ? doorSvg(f)
-    : `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" rx="2" fill="${typeColor(f.type)}"
-        stroke="${sel?'#2563eb':'#475569'}" stroke-width="${sel?2.5:1}" vector-effect="non-scaling-stroke"/>
-       <text x="${cx}" y="${cy}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#1e293b">${esc(f.label||f.type)}</text>`;
+  let body;
+  if(isDoor(f)){ body = doorSvg(f); }
+  else {
+    const glyph = GLYPH[f.type];
+    const rect = `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" rx="3" fill="${typeColor(f.type)}"
+      stroke="${sel?'#2563eb':'#475569'}" stroke-width="${sel?2.5:1}" vector-effect="non-scaling-stroke"/>`;
+    if(glyph){
+      const art = `<g stroke="#42566b" stroke-width="1.4" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round">${glyph(f.x,f.y,f.w,f.d)}</g>`;
+      const fs = Math.max(7, Math.min(11, Math.min(f.w,f.d)/6));
+      const label = `<text x="${cx}" y="${f.y+f.d-fs*0.5}" font-size="${fs}" text-anchor="middle" fill="#46586b">${esc(f.label||f.type)}</text>`;
+      body = rect + art + label;
+    } else {
+      const fs = Math.max(8, Math.min(14, Math.min(f.w,f.d)/5));
+      body = rect + `<text x="${cx}" y="${cy}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#1e293b">${esc(f.label||f.type)}</text>`;
+    }
+  }
   const sh = (single() && single().kind==='furniture' && single().o.id===f.id) ? handlesSvg(f) : '';
   const dsel = (isDoor(f) && sel) ? `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` : '';
   return `<g class="furn" data-id="${f.id}" transform="rotate(${f.rot} ${cx} ${cy})">${body}${dsel}${sh}</g>`;
@@ -183,11 +228,87 @@ function textSvg(t){
     <text x="${t.x}" y="${t.y}" font-size="${t.size}" fill="${sel?'#2563eb':'#0f172a'}" font-weight="500"
       paint-order="stroke" stroke="#fff" stroke-width="3">${esc(t.t)}</text></g>`;
 }
+/* ---------- ① 房間面積：格點 flood-fill ---------- */
+function computeRooms(){
+  const key = JSON.stringify({a:state.area, g:state.grid, w:state.walls});
+  if(roomsCache.key === key) return roomsCache.rooms;
+  const A=state.area, cell=Math.max(5, Math.min(state.grid, 20));
+  const cols=Math.ceil(A.w/cell), rows=Math.ceil(A.h/cell), N=cols*rows;
+  const blocked=new Uint8Array(N);
+  state.walls.forEach(wl=>{
+    const d=wallDisp(wl), t=d.t;
+    const x0=Math.min(d.x1,d.x2)-t/2, x1=Math.max(d.x1,d.x2)+t/2;
+    const y0=Math.min(d.y1,d.y2)-t/2, y1=Math.max(d.y1,d.y2)+t/2;
+    const c0=Math.max(0,Math.floor(x0/cell)), c1=Math.min(cols-1,Math.floor(x1/cell));
+    const r0=Math.max(0,Math.floor(y0/cell)), r1=Math.min(rows-1,Math.floor(y1/cell));
+    for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+      const px=(c+0.5)*cell, py=(r+0.5)*cell;
+      if(px>=x0&&px<=x1&&py>=y0&&py<=y1) blocked[r*cols+c]=1;
+    }
+  });
+  // 房屋＝area 範圍（格邊界當外牆）；非阻擋的連通區即房間，不另淹外部
+  const seen=new Uint8Array(N);
+  const rooms=[];
+  for(let i=0;i<N;i++){
+    if(seen[i]||blocked[i]) continue;
+    let cnt=0,sx=0,sy=0; const st=[i]; seen[i]=1;
+    while(st.length){ const j=st.pop(); const c=j%cols, r=(j-c)/cols;
+      cnt++; sx+=(c+0.5)*cell; sy+=(r+0.5)*cell;
+      const nb=[j-1,j+1,j-cols,j+cols];
+      if(c>0&&!seen[j-1]&&!blocked[j-1]){seen[j-1]=1;st.push(j-1);}
+      if(c<cols-1&&!seen[j+1]&&!blocked[j+1]){seen[j+1]=1;st.push(j+1);}
+      if(r>0&&!seen[j-cols]&&!blocked[j-cols]){seen[j-cols]=1;st.push(j-cols);}
+      if(r<rows-1&&!seen[j+cols]&&!blocked[j+cols]){seen[j+cols]=1;st.push(j+cols);}
+    }
+    const area=cnt*cell*cell;
+    if(area>=10000) rooms.push({cx:sx/cnt, cy:sy/cnt, area});  // >1 m²
+  }
+  roomsCache={key, rooms}; return rooms;
+}
+function roomsSvg(){
+  return computeRooms().map(r=>{
+    const py=(r.area/PYEONG_CM2).toFixed(1), m2=(r.area/10000).toFixed(1);
+    return `<g class="roomlbl" pointer-events="none"><text class="dim" x="${r.cx}" y="${r.cy}" font-size="15" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${py} 坪</text>`
+      + `<text class="dim" x="${r.cx}" y="${r.cy+18}" font-size="11" text-anchor="middle" fill="#5A6B7B" paint-order="stroke" stroke="#fff" stroke-width="3">${m2} m²</text></g>`;
+  }).join('');
+}
+/* ---------- ② 量測線 + 家具間距 ---------- */
+function measureSvg(){
+  if(!measure) return '';
+  const len=Math.round(Math.hypot(measure.x2-measure.x1, measure.y2-measure.y1));
+  const mx=(measure.x1+measure.x2)/2, my=(measure.y1+measure.y2)/2;
+  return `<g pointer-events="none"><line x1="${measure.x1}" y1="${measure.y1}" x2="${measure.x2}" y2="${measure.y2}" stroke="#0E7FB8" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"/>`
+    + `<circle cx="${measure.x1}" cy="${measure.y1}" r="${H_CM*0.7}" fill="#0E7FB8"/><circle cx="${measure.x2}" cy="${measure.y2}" r="${H_CM*0.7}" fill="#0E7FB8"/>`
+    + `<text class="dim" x="${mx}" y="${my-6}" font-size="15" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${len} cm</text></g>`;
+}
+function gapDimsSvg(f){
+  if(f.rot%90!==0) return '';
+  const horiz=f.rot%180===0, fw=horiz?f.w:f.d, fh=horiz?f.d:f.w;
+  const L=f.x+(f.w-fw)/2, R=L+fw, T=f.y+(f.d-fh)/2, B=T+fh, midX=(L+R)/2, midY=(T+B)/2;
+  const vx=[0,state.area.w], hy=[0,state.area.h];
+  state.walls.forEach(w=>{const d=wallDisp(w);
+    if(d.x1===d.x2){ const y1=Math.min(d.y1,d.y2),y2=Math.max(d.y1,d.y2); if(B>y1&&T<y2){ vx.push(d.x1-d.t/2,d.x1+d.t/2); } }
+    else if(d.y1===d.y2){ const x1=Math.min(d.x1,d.x2),x2=Math.max(d.x1,d.x2); if(R>x1&&L<x2){ hy.push(d.y1-d.t/2,d.y1+d.t/2); } }
+  });
+  const dim=(x1,y1,x2,y2,val)=>{ const mx=(x1+x2)/2,my=(y1+y2)/2;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0E7FB8" stroke-width="1" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`
+      + `<text class="dim" x="${mx}" y="${my-3}" font-size="11" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="3">${Math.round(val)}</text>`; };
+  let s='';
+  const lf=Math.max(...vx.filter(x=>x<=L+0.5)); if(isFinite(lf)&&L-lf>1) s+=dim(lf,midY,L,midY,L-lf);
+  const rf=Math.min(...vx.filter(x=>x>=R-0.5)); if(isFinite(rf)&&rf-R>1) s+=dim(R,midY,rf,midY,rf-R);
+  const tf=Math.max(...hy.filter(y=>y<=T+0.5)); if(isFinite(tf)&&T-tf>1) s+=dim(midX,tf,midX,T,T-tf);
+  const bf=Math.min(...hy.filter(y=>y>=B-0.5)); if(isFinite(bf)&&bf-B>1) s+=dim(midX,B,midX,bf,bf-B);
+  return s ? `<g pointer-events="none">${s}</g>` : '';
+}
 function innerSvg(){
   let s = gridSvg();
   state.walls.forEach(w => s += wallSvg(w));
+  if(showAreas) s += roomsSvg();
   state.furniture.forEach(f => s += furnSvg(f));
   state.texts.forEach(t => s += textSvg(t));
+  const sg = single();
+  if(sg && sg.kind==='furniture') s += gapDimsSvg(sg.o);
+  s += measureSvg();
   return s;
 }
 
@@ -199,6 +320,7 @@ function render(){
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   svg.className.baseVal = '';
   svg.classList.toggle('mode-wall', mode==='wall');
+  svg.classList.toggle('mode-measure', mode==='measure');
   svg.classList.toggle('mode-pan', mode==='pan' || spaceDown);
   svg.innerHTML = innerSvg();
   bindShapes();
@@ -268,6 +390,15 @@ function startMarquee(e){
     if(add) hits.forEach(addSel); else setSel(hits);
     render();
   }
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+}
+
+/* ---------- 量測：拖一條線 ---------- */
+function startMeasure(e){
+  e.preventDefault();
+  const a=toSvg(e); measure={x1:a.x,y1:a.y,x2:a.x,y2:a.y}; render();
+  function mv(ev){ const p=toSvg(ev); measure.x2=p.x; measure.y2=p.y; render(); }
+  function up(){ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); render(); }
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
 }
 
@@ -527,9 +658,10 @@ function delTab(i){ if(doc.tabs.length<=1) return; if(!confirm(`刪除分頁「$
 /* ---------- 模式 ---------- */
 function setMode(m){
   mode = m;
-  ['Select','Pan','Wall'].forEach(x => $('mode'+x).classList.toggle('active', mode===x.toLowerCase()));
+  ['Select','Pan','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.classList.toggle('active', mode===x.toLowerCase()); });
   $('modeHint').textContent = m==='wall' ? '按住拖曳畫一道牆，端點吸附格線。'
     : m==='pan' ? '拖曳畫布平移；滾輪縮放。'
+    : m==='measure' ? '拖一條線量距離（cm）；Esc 清除。'
     : '拖曳家具移動；拖空白處框選多個；Shift 點擊加選。';
   render();
 }
@@ -598,6 +730,37 @@ async function copyImage(){
   img.src = url;
 }
 
+/* ---------- ④ 分享連結 / 列印 ---------- */
+async function gzipB64(str){
+  if(!window.CompressionStream) return null;
+  const cs=new CompressionStream('gzip');
+  const blob=await new Response(new Blob([str]).stream().pipeThrough(cs)).blob();
+  const buf=new Uint8Array(await blob.arrayBuffer()); let bin='';
+  for(let i=0;i<buf.length;i++) bin+=String.fromCharCode(buf[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function ungzipB64(enc){
+  const bin=atob(enc.replace(/-/g,'+').replace(/_/g,'/'));
+  const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('gzip');
+  const blob=await new Response(new Blob([buf]).stream().pipeThrough(ds)).blob();
+  return await blob.text();
+}
+async function shareLink(){
+  const enc=await gzipB64(snapshot());
+  if(!enc){ showToast('瀏覽器不支援，請改用存檔分享'); return; }
+  const url=location.origin+location.pathname+'#d='+enc;
+  if(url.length>14000){ showToast('格局太大，請改用存檔分享'); return; }
+  try{ await navigator.clipboard.writeText(url); showToast('已複製分享連結'); }
+  catch(e){ prompt('複製此連結分享：', url); }
+}
+function printPlan(){
+  const w=window.open('', '_blank');
+  if(!w){ showToast('請允許彈出視窗後再試'); return; }
+  w.document.write(viewerHTML()); w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 500);
+}
+
 /* ---------- 工具列輸入 ---------- */
 function syncInputs(){ $('areaW').value=state.area.w; $('areaH').value=state.area.h; $('gridSel').value=state.grid; $('snapChk').checked=state.snap; updatePyeong(); }
 
@@ -610,10 +773,13 @@ function bindUI(){
   $('modeSelect').onclick = () => setMode('select');
   $('modePan').onclick    = () => setMode('pan');
   $('modeWall').onclick   = () => setMode('wall');
+  $('modeMeasure').onclick= () => setMode('measure');
   $('addText').onclick    = addText;
+  $('areaChk').onchange   = e => { showAreas=e.target.checked; render(); };
 
   $('btnUndo').onclick = undo; $('btnRedo').onclick = redo;
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;
+  $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan;
   $('btnLoad').onclick = () => $('fileInput').click();
   $('fileInput').onchange = e => { const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>loadFromText(String(rd.result||'')); rd.readAsText(f); e.target.value=''; };
   $('btnClear').onclick = () => {
@@ -629,8 +795,10 @@ function bindUI(){
 
   // 畫布背景 pointerdown
   svg.addEventListener('pointerdown', e => {
+    if(spaceDown || e.button===1){ startPan(e); return; }
     if(mode==='wall'){ startWallDraw(e); return; }
-    if(spaceDown || e.button===1 || mode==='pan'){ startPan(e); return; }
+    if(mode==='measure'){ startMeasure(e); return; }
+    if(mode==='pan'){ startPan(e); return; }
     if(e.target===svg){ startMarquee(e); }
   });
 
@@ -638,7 +806,7 @@ function bindUI(){
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ clearSel(); render(); return; }
+    if(e.key==='Escape'){ measure=null; clearSel(); render(); return; }
     if(typing) return;
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
@@ -677,8 +845,15 @@ function loadExample(){
 }
 
 /* ---------- 啟動 ---------- */
-function init(){
-  try{ const raw=localStorage.getItem(LS); doc = raw ? JSON.parse(raw) : blankDoc(); }catch(e){ doc = blankDoc(); }
+async function init(){
+  doc = null;
+  if(location.hash.startsWith('#d=')){          // 分享連結
+    try{ const o=JSON.parse(await ungzipB64(location.hash.slice(3))); if(o&&o.tabs) doc=o; }catch(e){}
+    history.replaceState(null,'',location.pathname+location.search);
+  }
+  if(!doc){
+    try{ const raw=localStorage.getItem(LS); doc = raw ? JSON.parse(raw) : blankDoc(); }catch(e){ doc = blankDoc(); }
+  }
   if(!doc || !doc.tabs){ doc = doc && doc.area ? migrate(doc) : blankDoc(); }
   setActive(doc.active||0); fixIds(); fitView();
   bindUI(); renderTabs(); renderCatalog(); syncInputs(); setMode('select');
