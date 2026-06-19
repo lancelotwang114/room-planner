@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>房屋家具配置工具 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🏠 房屋家具配置 <span class="ver">v2</span></div>
+  <div class="toolgroups">
+    <div class="group" title="編輯紀錄">
+      <button id="btnUndo" title="復原 (Ctrl+Z)">↺ 復原</button>
+      <button id="btnRedo" title="重做 (Ctrl+Y)">↻ 重做</button>
+    </div>
+    <div class="group" title="範例">
+      <button id="btnExample" title="載入三房兩廳範例格局">📐 範例</button>
+    </div>
+    <div class="group" title="存檔讀取">
+      <button id="btnSave" class="primary" title="存成自含 HTML，雙擊即可看">💾 存檔</button>
+      <button id="btnLoad" title="讀取 .html / .json 續編">📂 讀取</button>
+      <input type="file" id="fileInput" accept=".html,.json" hidden>
+    </div>
+    <div class="group" title="分享輸出">
+      <button id="btnCopy" title="複製目前分頁平面圖為圖片">📷 複製圖</button>
+    </div>
+    <div class="group">
+      <button id="btnClear" class="danger" title="清空目前分頁">🗑 清空</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabbar" id="tabbar" aria-label="格局分頁"></nav>
+
+<main class="layout">
+  <aside class="sidebar">
+    <section class="panel">
+      <h2>房屋尺寸（公分）</h2>
+      <div class="row">
+        <label>寬 <input type="number" id="areaW" min="100" max="3000" step="10"> cm</label>
+        <label>深 <input type="number" id="areaH" min="100" max="3000" step="10"> cm</label>
+      </div>
+      <p class="hint" id="pyeong">≈ 0 坪</p>
+      <div class="row">
+        <label>格線 <select id="gridSel">
+          <option value="5">5 cm</option>
+          <option value="10" selected>10 cm</option>
+          <option value="25">25 cm</option>
+          <option value="50">50 cm</option>
+        </select></label>
+        <label class="chk"><input type="checkbox" id="snapChk" checked> 吸附格線</label>
+      </div>
+    </section>
+
+    <section class="panel" id="editorSection">
+      <h2>編輯選取</h2>
+      <div id="editor"><p class="hint">點選畫布上的家具／牆／文字來編輯。</p></div>
+    </section>
+
+    <section class="panel">
+      <h2>模式</h2>
+      <div class="modes">
+        <button id="modeSelect" class="mode active">🖱 選取</button>
+        <button id="modePan" class="mode">✋ 平移</button>
+        <button id="modeWall" class="mode">📏 畫牆</button>
+        <button id="addText" class="mode">🅣 加文字</button>
+      </div>
+      <p class="hint" id="modeHint">拖曳家具移動；拖空白處框選多個；Shift 點擊加選。</p>
+      <p class="hint">滾輪縮放；空白鍵或中鍵拖曳平移。</p>
+    </section>
+
+    <section class="panel">
+      <h2>家具目錄 <span class="sub">拖曳放入畫布</span></h2>
+      <div id="catalog"></div>
+    </section>
+  </aside>
+
+  <div class="canvas-wrap">
+    <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="zoom-ctl" role="group" aria-label="縮放">
+      <button id="zoomOut" aria-label="縮小">−</button>
+      <button id="zoomLabel" title="重設縮放">100%</button>
+      <button id="zoomIn" aria-label="放大">＋</button>
+      <button id="zoomFit" title="符合視窗" aria-label="符合視窗">⤢</button>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+</main>
+
+<script src="app.js" defer></script>
+</body>
+</html>
