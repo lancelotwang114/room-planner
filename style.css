@@ -1,140 +1,146 @@
 :root{
-  --bg:#f1f5f9; --panel:#ffffff; --ink:#1e293b; --muted:#64748b;
-  --line:#e2e8f0; --line2:#cbd5e1; --accent:#2563eb; --accent-d:#1d4ed8;
-  --green:#16a34a; --red:#dc2626; --radius:10px;
+  --paper:#FBFAF7;      /* 製圖紙白 */
+  --paper-2:#F2EEE3;    /* 畫布外底 */
+  --ink:#15324A;        /* 製圖墨藍（chrome / 牆 / 主文字） */
+  --muted:#5A6B7B;      /* 標註灰 */
+  --line:#E4DECF;       /* 紙上細線 */
+  --line2:#d8d0bd;
+  --accent:#0E7FB8;     /* 藍曬青 */
+  --accent-d:#0a6797;
+  --danger:#C0392B;
+  --radius:9px;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Noto Sans TC',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; background:var(--bg); color:var(--ink);
-  font-family:"Noto Sans TC",system-ui,sans-serif; font-size:14px;
-  display:flex; flex-direction:column;
+  margin:0; background:var(--paper-2); color:var(--ink);
+  font-family:var(--sans); font-size:14px; display:flex; flex-direction:column;
 }
+.num,#pyeong,input.num,#zoomLabel{font-family:var(--mono); font-variant-numeric:tabular-nums}
 
 /* ---- top bar ---- */
 .topbar{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:10px 16px; background:#0f172a; color:#fff; flex-wrap:wrap;
+  padding:9px 16px; background:var(--ink); color:#eaf1f6; flex-wrap:wrap;
+  border-bottom:2px solid #0d2336;
 }
-.brand{font-weight:700; font-size:16px; letter-spacing:.5px}
-.brand .ver{font-size:11px; color:#94a3b8; font-weight:400; margin-left:4px}
-.toolgroups{display:flex; gap:14px; flex-wrap:wrap}
-.group{display:flex; gap:6px; align-items:center}
-.group + .group{border-left:1px solid #334155; padding-left:14px}
+.brand{font-weight:700; font-size:15px; letter-spacing:1px; display:flex; align-items:center; gap:7px}
+.brand-mark{color:var(--accent); font-size:18px}
+.brand .ver{font-family:var(--mono); font-size:11px; color:#7fa7c2; font-weight:500}
+.toolgroups{display:flex; gap:10px; flex-wrap:wrap}
+.group{display:flex; gap:5px; align-items:center}
+.group + .group{border-left:1px solid #2a4b66; padding-left:10px}
 .topbar button{
-  background:#1e293b; color:#e2e8f0; border:1px solid #334155;
-  padding:7px 12px; border-radius:8px; cursor:pointer; font-size:13px;
-  font-family:inherit; transition:.15s;
+  display:inline-flex; align-items:center; gap:6px; background:transparent; color:#cdddea;
+  border:1px solid #2f4f6a; padding:6px 11px; border-radius:8px; cursor:pointer;
+  font-size:13px; font-family:inherit; transition:background .15s,border-color .15s,color .15s;
 }
-.topbar button:hover{background:#334155}
-.topbar button.primary{background:var(--green); border-color:var(--green); color:#fff; font-weight:500}
-.topbar button.primary:hover{background:#15803d}
-.topbar button.danger:hover{background:var(--red); border-color:var(--red)}
+.topbar button:hover{background:#21425d; color:#fff}
+.topbar button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
+.topbar button.primary:hover{background:var(--accent-d)}
+.topbar button.danger:hover{background:var(--danger); border-color:var(--danger); color:#fff}
+svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
+
+/* ---- tab bar ---- */
+.tabbar{
+  display:flex; align-items:stretch; gap:4px; padding:6px 12px 0; background:var(--ink);
+  overflow-x:auto;
+}
+.tab{
+  display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:8px 8px 0 0;
+  background:#21425d; color:#cdddea; cursor:pointer; font-size:12px; white-space:nowrap; transition:.15s;
+}
+.tab:hover{background:#2a4f6e}
+.tab.active{background:var(--paper); color:var(--ink); font-weight:500}
+.tab .tabx{display:inline-flex; border:none; background:transparent; cursor:pointer; color:inherit; opacity:.6; padding:0}
+.tab .tabx:hover{opacity:1; color:var(--danger)}
+.tab .tabx svg{width:13px; height:13px}
+.tabbtn{
+  display:inline-flex; align-items:center; gap:4px; border:1px dashed #3a5a76; background:transparent;
+  color:#cdddea; cursor:pointer; border-radius:8px 8px 0 0; padding:6px 10px; font-size:12px; font-family:inherit;
+}
+.tabbtn:hover{background:#21425d}
+.tabbtn svg{width:14px; height:14px}
 
 /* ---- layout ---- */
 .layout{flex:1; display:flex; min-height:0}
 .sidebar{
-  width:300px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--line);
-  overflow-y:auto; padding:14px;
+  width:300px; flex-shrink:0; background:var(--paper); border-right:1px solid var(--line);
+  overflow-y:auto; padding:16px;
 }
-.panel{margin-bottom:18px}
+.panel{margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--line)}
+.panel:last-child{border-bottom:none}
 .panel h2{
-  font-size:13px; margin:0 0 10px; color:var(--ink); font-weight:700;
-  display:flex; align-items:baseline; gap:6px;
+  font-size:11px; margin:0 0 12px; color:var(--muted); font-weight:700;
+  text-transform:uppercase; letter-spacing:1.5px; display:flex; align-items:baseline; gap:6px;
 }
-.panel h2 .sub,.panel h2 .sub{font-size:11px; color:var(--muted); font-weight:400}
+.panel h2 .sub{font-size:11px; color:var(--muted); font-weight:400; text-transform:none; letter-spacing:0}
 .row{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap}
 label{display:flex; align-items:center; gap:5px; color:var(--muted); font-size:12px}
 label.chk{cursor:pointer}
 input[type=number],select,input[type=text]{
   font-family:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line2);
-  border-radius:7px; background:#fff; color:var(--ink); width:72px;
+  border-radius:7px; background:#fff; color:var(--ink); width:74px;
 }
-input[type=text]{width:100%}
-.hint{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.5}
+input.num{font-family:var(--mono)}
+input[type=text]{width:100%; font-family:var(--sans)}
+.pyeong{margin:0 0 12px; font-size:18px; font-weight:600; color:var(--ink); letter-spacing:.5px}
+.hint{font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.55}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
 /* ---- modes ---- */
-.modes{display:flex; gap:6px; flex-wrap:wrap}
+.modes{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px}
 .mode{
-  flex:1; min-width:80px; padding:9px 6px; border:1px solid var(--line2); background:#fff;
-  border-radius:8px; cursor:pointer; font-family:inherit; font-size:12px; color:var(--ink);
-  transition:.15s;
+  flex:1; min-width:78px; display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:10px 6px; border:1px solid var(--line2); background:#fff; border-radius:8px;
+  cursor:pointer; font-family:inherit; font-size:12px; color:var(--ink); transition:.15s;
 }
+.mode svg{width:18px; height:18px}
 .mode:hover{border-color:var(--accent)}
-.mode.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
+.mode.active{background:var(--accent); border-color:var(--accent); color:#fff}
+.toolwide{
+  width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+  padding:9px; border:1px solid var(--line2); background:#fff; border-radius:8px;
+  cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink); transition:.15s;
+}
+.toolwide:hover{border-color:var(--accent)}
 
 /* ---- catalog ---- */
-#catalog .cat-group{margin-bottom:12px}
-.cat-title{font-size:11px; color:var(--muted); margin:0 0 6px; font-weight:500}
+#catalog .cat-group{margin-bottom:13px}
+.cat-title{font-size:10px; color:var(--muted); margin:0 0 6px; font-weight:600; text-transform:uppercase; letter-spacing:1px}
 .cat-items{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .furn-chip{
-  display:flex; flex-direction:column; gap:2px; padding:7px 9px; border-radius:8px;
-  border:1px solid var(--line2); cursor:grab; background:#fff; transition:.12s; user-select:none;
-  touch-action:none;
+  display:flex; flex-direction:column; gap:2px; padding:8px 9px; border-radius:8px;
+  border:1px solid var(--line2); cursor:grab; background:#fff; transition:.12s; user-select:none; touch-action:none;
 }
-.furn-chip:hover{border-color:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.furn-chip:hover{border-color:var(--accent); box-shadow:0 1px 5px rgba(21,50,74,.1)}
 .furn-chip:active{cursor:grabbing}
-.furn-chip .swatch{width:100%; height:6px; border-radius:3px; margin-bottom:3px}
+.furn-chip .swatch{width:100%; height:5px; border-radius:3px; margin-bottom:3px}
 .furn-chip .nm{font-size:12px; font-weight:500}
-.furn-chip .dim{font-size:10px; color:var(--muted)}
-
-/* ---- tab bar (layouts) ---- */
-.tabbar{
-  display:flex; align-items:stretch; gap:4px; padding:6px 10px; background:#1e293b;
-  overflow-x:auto; border-bottom:1px solid #334155;
-}
-.tab{
-  display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:8px 8px 0 0;
-  background:#334155; color:#cbd5e1; cursor:pointer; font-size:12px; white-space:nowrap;
-  border:1px solid transparent; transition:.15s;
-}
-.tab:hover{background:#3e4c63}
-.tab.active{background:var(--panel); color:var(--ink); font-weight:500}
-.tab .tabx{border:none; background:transparent; cursor:pointer; color:inherit; font-size:14px; line-height:1; padding:0 2px}
-.tab .tabx:hover{color:var(--red)}
-.tabbtn{
-  border:1px dashed #475569; background:transparent; color:#cbd5e1; cursor:pointer;
-  border-radius:8px; padding:4px 10px; font-size:13px; font-family:inherit;
-}
-.tabbtn:hover{background:#334155}
+.furn-chip .dim{font-size:10px; color:var(--muted); font-family:var(--mono)}
 
 /* ---- sidebar editor ---- */
 #editor .selrow{display:flex; gap:8px; align-items:center; margin-bottom:9px; flex-wrap:wrap}
 #editor .seltitle{font-weight:700; font-size:14px}
+#editor .hint{margin:0}
 #editor button{
   font-family:inherit; font-size:12px; padding:8px 11px; border-radius:7px; cursor:pointer;
   border:1px solid var(--line2); background:#fff; color:var(--ink); min-height:36px; transition:.15s;
 }
 #editor button:hover{border-color:var(--accent)}
-#editor button.del{border-color:var(--red); color:var(--red)}
-#editor button.del:hover{background:var(--red); color:#fff}
-
-/* ---- zoom control (bottom-right of canvas) ---- */
-.zoom-ctl{
-  position:absolute; right:28px; bottom:28px; z-index:20; display:flex; gap:1px;
-  background:#fff; border:1px solid var(--line2); border-radius:10px; overflow:hidden;
-  box-shadow:0 4px 16px rgba(15,23,42,.12);
-}
-.zoom-ctl button{
-  min-width:40px; min-height:40px; border:none; background:#fff; color:var(--ink);
-  font-size:18px; cursor:pointer; font-family:inherit; transition:.15s;
-}
-.zoom-ctl button:hover{background:#eef2f7}
-#zoomLabel{font-size:13px; min-width:54px; border-left:1px solid var(--line); border-right:1px solid var(--line)}
-
-/* ---- palette drag ghost ---- */
-.drag-ghost{
-  position:fixed; z-index:60; pointer-events:none; transform:translate(-50%,-50%);
-  opacity:.85; width:96px; box-shadow:0 6px 20px rgba(15,23,42,.25);
-}
+#editor button.del{border-color:var(--danger); color:var(--danger)}
+#editor button.del:hover{background:var(--danger); color:#fff}
 
 /* ---- canvas ---- */
-.canvas-wrap{flex:1; min-width:0; position:relative; display:flex; padding:18px; background:#e9eef4;}
+.canvas-wrap{flex:1; min-width:0; position:relative; display:flex; padding:18px; background:var(--paper-2)}
 #board{
   width:100%; height:100%; background:#fff; border:1px solid var(--line2);
-  border-radius:var(--radius); box-shadow:0 4px 20px rgba(15,23,42,.06); touch-action:none;
+  border-radius:var(--radius); box-shadow:0 6px 24px rgba(21,50,74,.08); touch-action:none;
 }
 #board .grid{pointer-events:none}
+#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums}
 #board g.furn,#board g.txt{cursor:move}
 #board g.wall{cursor:move}
 #board.mode-wall{cursor:crosshair}
@@ -142,21 +148,43 @@ input[type=text]{width:100%}
 #board .handle{cursor:nwse-resize; fill:#fff; stroke:var(--accent); stroke-width:1.5; vector-effect:non-scaling-stroke}
 #board .handle.rot{cursor:grab; fill:var(--accent)}
 #board .wend{cursor:move; fill:#fff; stroke:var(--accent); stroke-width:1.5; vector-effect:non-scaling-stroke}
-#board .marquee{fill:rgba(37,99,235,.10); stroke:var(--accent); stroke-width:1; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
+#board .marquee{fill:rgba(14,127,184,.10); stroke:var(--accent); stroke-width:1; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
+
+/* empty-state hint */
+.empty-hint{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none;
+  color:var(--muted); font-size:14px; text-align:center; background:rgba(251,250,247,.85);
+  padding:14px 22px; border:1px dashed var(--line2); border-radius:10px;
+}
+.empty-hint b{color:var(--accent)}
+
+/* ---- zoom control ---- */
+.zoom-ctl{
+  position:absolute; right:28px; bottom:28px; z-index:20; display:flex; gap:1px;
+  background:#fff; border:1px solid var(--line2); border-radius:10px; overflow:hidden;
+  box-shadow:0 4px 16px rgba(21,50,74,.14);
+}
+.zoom-ctl button{
+  min-width:40px; min-height:40px; display:inline-flex; align-items:center; justify-content:center;
+  border:none; background:#fff; color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:.15s;
+}
+.zoom-ctl button:hover{background:#eef3f6; color:var(--accent)}
+#zoomLabel{min-width:56px; border-left:1px solid var(--line); border-right:1px solid var(--line)}
+
+/* ---- palette drag ghost ---- */
+.drag-ghost{position:fixed; z-index:60; pointer-events:none; transform:translate(-50%,-50%); opacity:.85; width:96px; box-shadow:0 6px 20px rgba(21,50,74,.28)}
 
 /* ---- toast ---- */
 .toast{
   position:absolute; left:50%; bottom:26px; transform:translateX(-50%) translateY(10px);
-  background:#0f172a; color:#fff; padding:8px 16px; border-radius:20px; font-size:13px;
-  opacity:0; pointer-events:none; transition:.2s; white-space:nowrap;
+  background:var(--ink); color:#fff; padding:9px 18px; border-radius:20px; font-size:13px;
+  opacity:0; pointer-events:none; transition:.2s; white-space:nowrap; box-shadow:0 6px 20px rgba(21,50,74,.25);
 }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
-@media (prefers-reduced-motion:reduce){
-  *{transition:none !important}
-}
-
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 @media (max-width:760px){
   .layout{flex-direction:column}
   .sidebar{width:100%; max-height:42vh; border-right:none; border-bottom:1px solid var(--line)}
+  .brand{display:none}
 }

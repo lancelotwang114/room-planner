@@ -119,8 +119,8 @@ function gridSvg(){
   const {w,h} = state.area, g = state.grid; let s = '<g class="grid">';
   for(let x=0; x<=w; x+=g){ const M=x%100===0; s += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
   for(let y=0; y<=h; y+=g){ const M=y%100===0; s += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
-  for(let x=0; x<=w; x+=100) s += `<text x="${x+2}" y="13" font-size="11" fill="#94a3b8">${x/100}m</text>`;
-  for(let y=100; y<=h; y+=100) s += `<text x="3" y="${y-3}" font-size="11" fill="#94a3b8">${y/100}m</text>`;
+  for(let x=0; x<=w; x+=100) s += `<text class="dim" x="${x+2}" y="13" font-size="11" fill="#90a4b5">${x/100}m</text>`;
+  for(let y=100; y<=h; y+=100) s += `<text class="dim" x="3" y="${y-3}" font-size="11" fill="#90a4b5">${y/100}m</text>`;
   s += `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#94a3b8" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
   return s + '</g>';
 }
@@ -144,7 +144,7 @@ function wallSvg(wl){
   return `<g class="wall" data-id="${wl.id}">
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="transparent" stroke-width="${d.t*2.4}" stroke-linecap="round"/>
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${sel?'#2563eb':'#334155'}" stroke-width="${d.t}" stroke-linecap="round"/>
-    <text x="${mx}" y="${my-d.t}" font-size="13" text-anchor="middle" fill="#1e293b" paint-order="stroke" stroke="#fff" stroke-width="3">${len}</text>
+    <text class="dim" x="${mx}" y="${my-d.t}" font-size="13" text-anchor="middle" fill="#15324A" paint-order="stroke" stroke="#fff" stroke-width="3">${len}</text>
     ${h}</g>`;
 }
 function doorSvg(f){
@@ -204,11 +204,13 @@ function render(){
   bindShapes();
   renderEditor();
   updatePyeong();
+  const empty = !state.walls.length && !state.furniture.length && !state.texts.length;
+  const eh = $('emptyHint'); if(eh) eh.hidden = !empty;
   const lbl = $('zoomLabel'); if(lbl) lbl.textContent = Math.round((fitW||view.w)/view.w*100) + '%';
 }
 function updatePyeong(){
   const p = (state.area.w * state.area.h / PYEONG_CM2);
-  const el = $('pyeong'); if(el) el.textContent = `≈ ${p.toFixed(1)} 坪（${(state.area.w*state.area.h/10000).toFixed(1)} m²）`;
+  const el = $('pyeong'); if(el) el.textContent = `${p.toFixed(1)} 坪 · ${(state.area.w*state.area.h/10000).toFixed(1)} m²`;
 }
 
 function bindShapes(){
@@ -420,34 +422,34 @@ function renderEditor(){
   if(selected.length > 1){
     box.innerHTML = `<div class="selrow"><span class="seltitle">已選 ${selected.length} 個物件</span></div>
       <div class="selrow"><span class="hint">拖曳任一可一起移動</span></div>
-      <div class="selrow"><button class="del" id="edDel">🗑 刪除全部</button></div>`;
+      <div class="selrow"><button class="del" id="edDel">刪除全部</button></div>`;
     $('edDel').onclick = deleteSel; return;
   }
   const {kind, o} = single();
   if(kind==='wall'){
     box.innerHTML = `<div class="selrow"><span class="seltitle">牆</span><span class="hint">長度 ${Math.round(Math.hypot(o.x2-o.x1,o.y2-o.y1))} cm・厚 ${state.grid} cm</span></div>
       <div class="selrow"><span class="hint">厚度＝格線；牆面對齊格線，家具會自動貼齊。</span></div>
-      <div class="selrow"><button class="del" id="edDel">🗑 刪除</button></div>`;
+      <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
     $('edDel').onclick = deleteSel; return;
   }
   if(kind==='text'){
     box.innerHTML = `<div class="selrow"><span class="seltitle">文字</span></div>
       <div class="selrow"><input type="text" id="edTxt" value="${esc(o.t)}" placeholder="輸入文字"></div>
       <div class="selrow"><label>字級 <input type="number" id="edSize" value="${o.size}" min="6" max="200" step="2"> cm</label></div>
-      <div class="selrow"><button class="del" id="edDel">🗑 刪除</button></div>`;
+      <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
     $('edTxt').oninput  = e => { const p=snapshot(); o.t=e.target.value; commit(p); render(); restoreCaret('edTxt'); };
     $('edSize').onchange= e => { const p=snapshot(); o.size=Math.max(6,+e.target.value||12); commit(p); render(); };
     $('edDel').onclick  = deleteSel; return;
   }
   // furniture
-  const doorBtn = isDoor(o) ? `<div class="selrow"><button id="edDoor">🚪 開門方向（${(o.swing||0)+1}/4）</button></div>` : '';
+  const doorBtn = isDoor(o) ? `<div class="selrow"><button id="edDoor">開門方向（${(o.swing||0)+1}/4）</button></div>` : '';
   box.innerHTML = `<div class="selrow"><span class="seltitle">${esc(o.type)}</span><span class="hint">${o.w}×${o.d} cm・${Math.round(o.rot)}°</span></div>
     <div class="selrow"><label>寬 <input type="number" id="edW" value="${o.w}" min="10" max="3000" step="5"></label>
       <label>深 <input type="number" id="edD" value="${o.d}" min="10" max="3000" step="5"></label></div>
     <div class="selrow"><input type="text" id="edLbl" value="${esc(o.label)}" placeholder="自訂標籤（留空顯示名稱）"></div>
-    <div class="selrow"><button id="edRot">⟳ 旋轉 90°</button></div>
+    <div class="selrow"><button id="edRot">旋轉 90°</button></div>
     ${doorBtn}
-    <div class="selrow"><button class="del" id="edDel">🗑 刪除</button></div>`;
+    <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
   $('edW').onchange  = e => { const p=snapshot(); o.w=Math.max(10,+e.target.value||10); commit(p); render(); };
   $('edD').onchange  = e => { const p=snapshot(); o.d=Math.max(10,+e.target.value||10); commit(p); render(); };
   $('edLbl').oninput = e => { const p=snapshot(); o.label=e.target.value; commit(p); render(); restoreCaret('edLbl'); };
@@ -467,7 +469,7 @@ function renderCatalog(){
     <div class="cat-items">${g.items.map(([n,w,d]) =>
       `<div class="furn-chip" data-type="${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
     + custom
-    + `<button class="tabbtn" id="addCustom" style="width:100%;margin-top:6px;color:var(--ink);border-color:var(--line2)">＋ 自訂家具</button>`;
+    + `<button class="toolwide" id="addCustom" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>自訂家具</span></button>`;
   box.querySelectorAll('.furn-chip').forEach(chip => chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip)));
   $('addCustom').onclick = addCustomType;
 }
@@ -497,10 +499,11 @@ function startPaletteDrag(e, chip){
 /* ---------- 分頁 ---------- */
 function renderTabs(){
   const bar = $('tabbar');
+  const xIcon = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
   bar.innerHTML = doc.tabs.map((L,i) =>
-    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁">×</button>`:''}</div>`).join('')
-    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁">＋</button>`
-    + `<button class="tabbtn" id="tabDup" title="複製目前分頁">⧉ 複製</button>`;
+    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
+    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
+    + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
   bar.querySelectorAll('.tab').forEach(t => {
     t.querySelector('.tabname').addEventListener('click', () => switchTab(+t.dataset.i));
     t.querySelector('.tabname').addEventListener('dblclick', () => renameTab(+t.dataset.i));
