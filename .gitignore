@@ -1,0 +1,20 @@
+# 規劃暫存檔（內部筆記，不入庫）
+PLAN.txt
+
+# OS 垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 編輯器 / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# 本機工具設定
+.claude/
+
+# 日誌 / 暫存
+*.log
+*.tmp
