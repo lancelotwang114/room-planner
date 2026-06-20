@@ -155,7 +155,7 @@ function wallSvg(wl){
   return `<g class="wall" data-id="${wl.id}">
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="transparent" stroke-width="${d.t*2.4}" stroke-linecap="round"/>
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${sel?'#2563eb':'#334155'}" stroke-width="${d.t}" stroke-linecap="round"/>
-    <text class="dim" x="${mx}" y="${my-d.t}" font-size="13" text-anchor="middle" fill="#15324A" paint-order="stroke" stroke="#fff" stroke-width="3">${len}</text>
+    <text class="dim" x="${mx}" y="${my-d.t}" font-size="13" text-anchor="middle" fill="#134E4A" paint-order="stroke" stroke="#fff" stroke-width="3">${len}</text>
     ${h}</g>`;
 }
 function doorSvg(f){
@@ -276,7 +276,7 @@ function computeRooms(){
 function roomsSvg(){
   return computeRooms().map(r=>{
     const py=(r.area/PYEONG_CM2).toFixed(1), m2=(r.area/10000).toFixed(1);
-    return `<g class="roomlbl" pointer-events="none"><text class="dim" x="${r.cx}" y="${r.cy}" font-size="15" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${py} 坪</text>`
+    return `<g class="roomlbl" pointer-events="none"><text class="dim" x="${r.cx}" y="${r.cy}" font-size="15" text-anchor="middle" fill="#0D9488" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${py} 坪</text>`
       + `<text class="dim" x="${r.cx}" y="${r.cy+18}" font-size="11" text-anchor="middle" fill="#5A6B7B" paint-order="stroke" stroke="#fff" stroke-width="3">${m2} m²</text></g>`;
   }).join('');
 }
@@ -285,9 +285,9 @@ function measureSvg(){
   if(!measure) return '';
   const len=Math.round(Math.hypot(measure.x2-measure.x1, measure.y2-measure.y1));
   const mx=(measure.x1+measure.x2)/2, my=(measure.y1+measure.y2)/2;
-  return `<g pointer-events="none"><line x1="${measure.x1}" y1="${measure.y1}" x2="${measure.x2}" y2="${measure.y2}" stroke="#0E7FB8" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"/>`
-    + `<circle cx="${measure.x1}" cy="${measure.y1}" r="${H_CM*0.7}" fill="#0E7FB8"/><circle cx="${measure.x2}" cy="${measure.y2}" r="${H_CM*0.7}" fill="#0E7FB8"/>`
-    + `<text class="dim" x="${mx}" y="${my-6}" font-size="15" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${len} cm</text></g>`;
+  return `<g pointer-events="none"><line x1="${measure.x1}" y1="${measure.y1}" x2="${measure.x2}" y2="${measure.y2}" stroke="#0D9488" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"/>`
+    + `<circle cx="${measure.x1}" cy="${measure.y1}" r="${H_CM*0.7}" fill="#0D9488"/><circle cx="${measure.x2}" cy="${measure.y2}" r="${H_CM*0.7}" fill="#0D9488"/>`
+    + `<text class="dim" x="${mx}" y="${my-6}" font-size="15" text-anchor="middle" fill="#0D9488" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${len} cm</text></g>`;
 }
 function gapDimsSvg(f){
   if(f.rot%90!==0) return '';
@@ -299,8 +299,8 @@ function gapDimsSvg(f){
     else if(d.y1===d.y2){ const x1=Math.min(d.x1,d.x2),x2=Math.max(d.x1,d.x2); if(R>x1&&L<x2){ hy.push(d.y1-d.t/2,d.y1+d.t/2); } }
   });
   const dim=(x1,y1,x2,y2,val)=>{ const mx=(x1+x2)/2,my=(y1+y2)/2;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0E7FB8" stroke-width="1" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`
-      + `<text class="dim" x="${mx}" y="${my-3}" font-size="11" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="3">${Math.round(val)}</text>`; };
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0D9488" stroke-width="1" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`
+      + `<text class="dim" x="${mx}" y="${my-3}" font-size="11" text-anchor="middle" fill="#0D9488" paint-order="stroke" stroke="#fff" stroke-width="3">${Math.round(val)}</text>`; };
   let s='';
   const lf=Math.max(...vx.filter(x=>x<=L+0.5)); if(isFinite(lf)&&L-lf>1) s+=dim(lf,midY,L,midY,L-lf);
   const rf=Math.min(...vx.filter(x=>x>=R-0.5)); if(isFinite(rf)&&rf-R>1) s+=dim(R,midY,rf,midY,rf-R);
@@ -664,7 +664,7 @@ function renderEditor(){
   }
   if(kind==='text'){
     box.innerHTML = `<div class="selrow"><span class="seltitle">文字</span></div>
-      <div class="selrow"><input type="text" id="edTxt" value="${esc(o.t)}" placeholder="輸入文字"></div>
+      <div class="selrow"><input type="text" id="edTxt" value="${esc(o.t)}" aria-label="文字內容" placeholder="輸入文字…"></div>
       <div class="selrow"><label>字級 <input type="number" id="edSize" value="${o.size}" min="6" max="200" step="2"> cm</label></div>
       <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
     $('edTxt').oninput  = e => { const p=snapshot(); o.t=e.target.value; commit(p); render(); restoreCaret('edTxt'); };
@@ -676,7 +676,7 @@ function renderEditor(){
   box.innerHTML = `<div class="selrow"><span class="seltitle">${esc(o.type)}</span><span class="hint">${o.w}×${o.d} cm・${Math.round(o.rot)}°</span></div>
     <div class="selrow"><label>寬 <input type="number" id="edW" value="${o.w}" min="10" max="3000" step="5"></label>
       <label>深 <input type="number" id="edD" value="${o.d}" min="10" max="3000" step="5"></label></div>
-    <div class="selrow"><input type="text" id="edLbl" value="${esc(o.label)}" placeholder="自訂標籤（留空顯示名稱）"></div>
+    <div class="selrow"><input type="text" id="edLbl" value="${esc(o.label)}" aria-label="自訂標籤" placeholder="自訂標籤（留空顯示名稱）…"></div>
     <div class="selrow swatches">${FCOLORS.map(c=>`<button class="sw" data-c="${c}" title="${c}" style="background:${c}"></button>`).join('')}<button class="sw reset" data-c="" title="預設色">↺</button></div>
     <div class="selrow"><button id="edRot">旋轉 90°</button></div>
     ${doorBtn}
@@ -701,7 +701,7 @@ function renderCatalog(){
     <div class="cat-items">${g.items.map(([n,w,d]) =>
       `<div class="furn-chip" data-type="${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
     + custom
-    + `<button class="toolwide" id="addCustom" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>自訂家具</span></button>`;
+    + `<button class="toolwide" id="addCustom" style="margin-top:4px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>自訂家具</span></button>`;
   box.querySelectorAll('.furn-chip').forEach(chip => chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip)));
   box.querySelectorAll('.chipx').forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); deleteCustomType(b.dataset.del); }); });
   $('addCustom').onclick = addCustomType;
@@ -732,11 +732,11 @@ function startPaletteDrag(e, chip){
 /* ---------- 分頁 ---------- */
 function renderTabs(){
   const bar = $('tabbar');
-  const xIcon = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
+  const xIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
   bar.innerHTML = doc.tabs.map((L,i) =>
-    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
-    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
-    + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
+    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><button class="tabname"${i===doc.active?' aria-current="page"':''}>${esc(L.name)}</button>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
+    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
+    + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
   bar.querySelectorAll('.tab').forEach(t => {
     t.querySelector('.tabname').addEventListener('click', () => switchTab(+t.dataset.i));
     t.querySelector('.tabname').addEventListener('dblclick', () => renameTab(+t.dataset.i));
