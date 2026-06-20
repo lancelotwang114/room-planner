@@ -103,7 +103,11 @@ function applyDoc(o, refit){
 }
 function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); applyDoc(JSON.parse(undoStack.pop())); }
 function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); applyDoc(JSON.parse(redoStack.pop())); }
-function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{ localStorage.setItem(LS, snapshot()); }catch(e){} }, 400); }
+let saveFailed = false;
+function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{
+  try{ localStorage.setItem(LS, snapshot()); saveFailed=false; }
+  catch(e){ if(!saveFailed){ saveFailed=true; showToast('自動儲存失敗（空間不足，底圖可能過大）→ 請用「存檔」'); } }
+}, 400); }
 
 /* ---------- 選取模型（多選） ---------- */
 function findObj(s){
@@ -894,6 +898,12 @@ function bindUI(){
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;
   $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan; $('btnLong').onclick = exportAllPNG;
 
+  // 說明
+  const help=$('helpOverlay');
+  $('btnHelp').onclick = () => help.hidden=false;
+  $('helpClose').onclick = () => help.hidden=true;
+  help.addEventListener('click', e => { if(e.target===help) help.hidden=true; });
+
   // 底圖
   $('bgUpload').onclick = () => $('bgInput').click();
   $('bgInput').onchange = e => { const f=e.target.files[0]; if(f) loadBg(f); e.target.value=''; };
@@ -941,7 +951,7 @@ function bindUI(){
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ measure=null; clearSel(); render(); return; }
+    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; return; } measure=null; clearSel(); render(); return; }
     if(typing) return;
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
