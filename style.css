@@ -113,9 +113,14 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .cat-title{font-size:10px; color:var(--muted); margin:0 0 6px; font-weight:600; text-transform:uppercase; letter-spacing:1px}
 .cat-items{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .furn-chip{
-  display:flex; flex-direction:column; gap:2px; padding:8px 9px; border-radius:8px;
+  position:relative; display:flex; flex-direction:column; gap:2px; padding:8px 9px; border-radius:8px;
   border:1px solid var(--line2); cursor:grab; background:#fff; transition:.12s; user-select:none; touch-action:none;
 }
+.chipx{
+  position:absolute; top:3px; right:3px; width:18px; height:18px; line-height:1; border:none;
+  background:#f1f5f9; color:var(--muted); border-radius:5px; cursor:pointer; font-size:14px; padding:0;
+}
+.chipx:hover{background:var(--danger); color:#fff}
 .furn-chip:hover{border-color:var(--accent); box-shadow:0 1px 5px rgba(21,50,74,.1)}
 .furn-chip:active{cursor:grabbing}
 .furn-chip .swatch{width:100%; height:5px; border-radius:3px; margin-bottom:3px}
@@ -133,6 +138,10 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #editor button:hover{border-color:var(--accent)}
 #editor button.del{border-color:var(--danger); color:var(--danger)}
 #editor button.del:hover{background:var(--danger); color:#fff}
+#editor .swatches{gap:5px}
+#editor .sw{width:24px; height:24px; min-height:0; padding:0; border-radius:6px; border:1px solid var(--line2)}
+#editor .sw:hover{border-color:var(--accent)}
+#editor .sw.reset{background:#fff; color:var(--muted)}
 
 /* ---- canvas ---- */
 .canvas-wrap{flex:1; min-width:0; position:relative; display:flex; padding:18px; background:var(--paper-2)}
@@ -152,6 +161,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #board .handle.rot{cursor:grab; fill:var(--accent)}
 #board .wend{cursor:move; fill:#fff; stroke:var(--accent); stroke-width:1.5; vector-effect:non-scaling-stroke}
 #board .marquee{fill:rgba(14,127,184,.10); stroke:var(--accent); stroke-width:1; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
+#board .guide{stroke:#e11d48; stroke-width:1; vector-effect:non-scaling-stroke; pointer-events:none; stroke-dasharray:4 3}
 
 /* empty-state hint */
 .empty-hint{
