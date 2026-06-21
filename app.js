@@ -916,9 +916,10 @@ function bindUI(){
 
   // 說明
   const help=$('helpOverlay');
-  $('btnHelp').onclick = () => help.hidden=false;
-  $('helpClose').onclick = () => help.hidden=true;
-  help.addEventListener('click', e => { if(e.target===help) help.hidden=true; });
+  const closeHelp = () => { help.hidden=true; $('btnHelp').focus(); };
+  $('btnHelp').onclick = () => { help.hidden=false; $('helpClose').focus(); };
+  $('helpClose').onclick = closeHelp;
+  help.addEventListener('click', e => { if(e.target===help) closeHelp(); });
 
   // 底圖
   $('bgUpload').onclick = () => $('bgInput').click();
@@ -967,7 +968,7 @@ function bindUI(){
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; return; } measure=null; clearSel(); render(); return; }
+    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } measure=null; clearSel(); render(); return; }
     if(typing) return;
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }

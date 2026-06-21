@@ -7,41 +7,41 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <header class="topbar">
   <div class="brand"><span class="brand-mark">▦</span> 房屋家具配置 <span class="ver">v2</span></div>
   <div class="toolgroups">
     <div class="group">
-      <button id="btnUndo" title="復原 (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>復原</span></button>
-      <button id="btnRedo" title="重做 (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>重做</span></button>
+      <button id="btnUndo" title="復原 (Ctrl+Z)" aria-label="復原"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>復原</span></button>
+      <button id="btnRedo" title="重做 (Ctrl+Y)" aria-label="重做"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>重做</span></button>
     </div>
     <div class="group">
-      <button id="btnExample" title="載入三房兩廳範例"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="9" height="7" rx="1"/><rect x="16" y="14" width="5" height="7" rx="1"/></svg><span>範例</span></button>
+      <button id="btnExample" title="載入三房兩廳範例" aria-label="載入範例"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="9" height="7" rx="1"/><rect x="16" y="14" width="5" height="7" rx="1"/></svg><span>範例</span></button>
     </div>
     <div class="group">
-      <button id="btnSave" class="primary" title="存成自含 HTML"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>存檔</span></button>
-      <button id="btnLoad" title="讀取 .html / .json 續編"><svg viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.82 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/></svg><span>讀取</span></button>
+      <button id="btnSave" class="primary" title="存成自含 HTML" aria-label="存檔"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>存檔</span></button>
+      <button id="btnLoad" title="讀取 .html / .json 續編" aria-label="讀取"><svg viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.82 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/></svg><span>讀取</span></button>
       <input type="file" id="fileInput" accept=".html,.json" hidden>
     </div>
     <div class="group">
-      <button id="btnCopy" title="複製目前分頁平面圖"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>複製圖</span></button>
-      <button id="btnShare" title="複製分享連結"><svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>分享</span></button>
-      <button id="btnLong" title="下載含所有分頁的長圖"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="9" rx="1"/><rect x="5" y="13" width="14" height="9" rx="1"/></svg><span>長圖</span></button>
-      <button id="btnPrint" title="列印 / 另存 PDF"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>列印</span></button>
+      <button id="btnCopy" title="複製目前分頁平面圖" aria-label="複製圖"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>複製圖</span></button>
+      <button id="btnShare" title="複製分享連結" aria-label="分享"><svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>分享</span></button>
+      <button id="btnLong" title="下載含所有分頁的長圖" aria-label="長圖"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="9" rx="1"/><rect x="5" y="13" width="14" height="9" rx="1"/></svg><span>長圖</span></button>
+      <button id="btnPrint" title="列印 / 另存 PDF" aria-label="列印"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>列印</span></button>
     </div>
     <div class="group">
-      <button id="btnClear" class="danger" title="清空目前分頁"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>清空</span></button>
-      <button id="btnHelp" title="使用說明 / 快捷鍵"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span>說明</span></button>
+      <button id="btnClear" class="danger" title="清空目前分頁" aria-label="清空"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>清空</span></button>
+      <button id="btnHelp" title="使用說明 / 快捷鍵" aria-label="使用說明"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span>說明</span></button>
     </div>
   </div>
 </header>
 
 <div id="helpOverlay" class="overlay" hidden>
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <button class="modal-x" id="helpClose" aria-label="關閉">×</button>
-    <h2>使用說明</h2>
+    <h2 id="helpTitle">使用說明</h2>
     <h3>模式</h3>
     <ul>
       <li><b>選取</b>：拖家具移動；拖空白處框選多個；Shift 點擊加選。</li>
@@ -143,10 +143,10 @@
       <button id="zoomIn" aria-label="放大"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
       <button id="zoomFit" title="符合視窗" aria-label="符合視窗"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
     </div>
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 </main>
 
-<script src="app.js?v=7" defer></script>
+<script src="app.js?v=8" defer></script>
 </body>
 </html>
