@@ -130,10 +130,24 @@ function gridSvg(){
   const {w,h} = state.area, g = state.grid; let s = '<g class="grid">';
   for(let x=0; x<=w; x+=g){ const M=x%100===0; s += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
   for(let y=0; y<=h; y+=g){ const M=y%100===0; s += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
-  for(let x=0; x<=w; x+=100) s += `<text class="dim" x="${x+2}" y="13" font-size="11" fill="#90a4b5">${x/100}m</text>`;
-  for(let y=100; y<=h; y+=100) s += `<text class="dim" x="3" y="${y-3}" font-size="11" fill="#90a4b5">${y/100}m</text>`;
   s += `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#94a3b8" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
   return s + '</g>';
+}
+// 格線公尺標籤（畫最上層，含白色光暈避免被牆蓋住）
+function gridLabelsSvg(){
+  const {w,h} = state.area; let s = '<g class="grid" pointer-events="none">';
+  for(let x=0; x<=w; x+=100) s += `<text class="dim" x="${x+2}" y="13" font-size="11" fill="#64748b" paint-order="stroke" stroke="#fff" stroke-width="3">${x/100}m</text>`;
+  for(let y=100; y<=h; y+=100) s += `<text class="dim" x="3" y="${y-3}" font-size="11" fill="#64748b" paint-order="stroke" stroke="#fff" stroke-width="3">${y/100}m</text>`;
+  return s + '</g>';
+}
+function wallLabelSvg(wl){
+  const d = wallDisp(wl);
+  const len = Math.round(Math.hypot(wl.x2-wl.x1, wl.y2-wl.y1));
+  const mx=(d.x1+d.x2)/2, my=(d.y1+d.y2)/2;
+  const vert = d.x1===d.x2;
+  // 垂直牆標籤放右側、水平牆放上方，並加白色光暈
+  const tx = vert ? mx+d.t : mx, ty = vert ? my : my-d.t;
+  return `<text class="dim" x="${tx}" y="${ty}" font-size="13" text-anchor="middle" fill="#15324A" paint-order="stroke" stroke="#fff" stroke-width="3.5" pointer-events="none">${len}</text>`;
 }
 // 牆填滿一格：厚度=格線。內牆往 +側填（兩面落格線）；外牆往外填（不吃室內）。
 function wallDisp(wl){
@@ -155,7 +169,6 @@ function wallSvg(wl){
   return `<g class="wall" data-id="${wl.id}">
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="transparent" stroke-width="${d.t*2.4}" stroke-linecap="round"/>
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${sel?'#2563eb':'#334155'}" stroke-width="${d.t}" stroke-linecap="round"/>
-    <text class="dim" x="${mx}" y="${my-d.t}" font-size="13" text-anchor="middle" fill="#15324A" paint-order="stroke" stroke="#fff" stroke-width="3">${len}</text>
     ${h}</g>`;
 }
 function doorSvg(f){
@@ -163,7 +176,7 @@ function doorSvg(f){
   const left = (sw===0||sw===3), down = (sw===0||sw===1);
   const Hx = x + (left?0:L), Cx = x + (left?L:0), Hy = y, Cy = y;
   const Ox = Hx, Oy = y + (down?L:-L);
-  const sweep = (left === down) ? 1 : 0;
+  const sweep = (left === down) ? 0 : 1;
   return `<rect x="${x}" y="${y}" width="${L}" height="${t}" fill="#e5e7eb" stroke="#475569" stroke-width="1" vector-effect="non-scaling-stroke"/>
     <line x1="${Hx}" y1="${Hy}" x2="${Ox}" y2="${Oy}" stroke="#94a3b8" stroke-width="2" vector-effect="non-scaling-stroke"/>
     <path d="M ${Ox} ${Oy} A ${L} ${L} 0 0 ${sweep} ${Cx} ${Cy}" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 6" vector-effect="non-scaling-stroke"/>`;
@@ -313,9 +326,12 @@ function innerSvg(){
   if(state.bg) s += `<image href="${state.bg.src}" x="${state.bg.x}" y="${state.bg.y}" width="${state.bg.w}" height="${state.bg.h}" opacity="${state.bg.opacity}" preserveAspectRatio="none" pointer-events="none"/>`;
   s += gridSvg();
   state.walls.forEach(w => s += wallSvg(w));
-  if(showAreas) s += roomsSvg();
   state.furniture.forEach(f => s += furnSvg(f));
   state.texts.forEach(t => s += textSvg(t));
+  // 標註層（畫最上層，避免被牆/家具蓋住）
+  s += gridLabelsSvg();
+  state.walls.forEach(w => s += wallLabelSvg(w));
+  if(showAreas) s += roomsSvg();
   const sg = single();
   if(sg && sg.kind==='furniture') s += gapDimsSvg(sg.o);
   s += measureSvg();
@@ -988,7 +1004,8 @@ function loadExample(){
   F('餐桌',420,450); T(430,640,'餐廳',26);
   F('流理台',690,410,90); F('冰箱',700,640); T(690,560,'廚房',24);
   F('浴缸',830,390); F('馬桶',850,520); T(870,470,'衛浴',24);
-  F('門',150,345,0,0); F('門',520,345,0,0); F('門',860,345,0,0); F('門',710,345,0,0); F('門',870,345,0,0); F('門',460,790,0,3);
+  F('門',150,345,0,3); F('門',440,345,0,3); F('門',760,345,0,3);   // 三房門開向房內空地
+  F('門',560,345,0,0); F('門',900,345,0,3); F('門',300,790,0,3);   // 餐廳/衛浴/前門
   doc.tabs.push(L); setActive(doc.tabs.length-1); fixIds(); clearSel(); fitView();
   commit(prev); render(); renderTabs(); renderCatalog(); syncInputs(); showToast('已新增「三房兩廳」分頁');
 }
