@@ -7,11 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="brand-mark">▦</span> 房屋家具配置 <span class="ver">v2</span></div>
+  <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>房屋家具配置<span class="ver">v2</span></div>
   <div class="toolgroups">
     <div class="group">
       <button id="btnUndo" title="復原 (Ctrl+Z)" aria-label="復原"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>復原</span></button>
@@ -94,6 +94,7 @@
         <label class="chk"><input type="checkbox" id="snapChk" checked> 吸附格線</label>
       </div>
       <label class="chk"><input type="checkbox" id="areaChk"> 顯示房間面積</label>
+      <label class="chk"><input type="checkbox" id="titleChk" checked> 顯示圖框標題</label>
     </section>
 
     <section class="panel" id="editorSection">
@@ -136,7 +137,7 @@
 
   <div class="canvas-wrap">
     <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
-    <div id="emptyHint" class="empty-hint" hidden>從左側<b>拖家具</b>進來，或按上方 <b>範例</b> 開始</div>
+    <div id="emptyHint" class="empty-hint" hidden><span class="eyebrow">圖面待繪 · DRAWING</span>從左側<b>拖家具</b>進來，或按上方 <b>範例</b> 開始</div>
     <div class="zoom-ctl" role="group" aria-label="縮放">
       <button id="zoomOut" aria-label="縮小"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
       <button id="zoomLabel" class="num" title="重設縮放">100%</button>
@@ -147,6 +148,6 @@
   </div>
 </main>
 
-<script src="app.js?v=8" defer></script>
+<script src="app.js?v=11" defer></script>
 </body>
 </html>

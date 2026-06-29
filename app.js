@@ -24,6 +24,7 @@ let doc, state, view = null, fitW = 0, mode = 'select', nextId = 1;
 let selected = [];                 // [{kind,id}]  多選
 let spaceDown = false;
 let showAreas = false;             // 顯示房間面積（不存檔）
+let showTitleBlock = true;         // 顯示圖框標題欄（不存檔，匯出時帶上）
 let roomsCache = {key:null, rooms:[]};
 let measure = null;                // 量測線 {x1,y1,x2,y2}（暫態，不存檔）
 let clip = null;                   // 複製暫存
@@ -128,9 +129,9 @@ function single(){                       // 恰好選 1 個 → {kind,obj}
 /* ---------- SVG 片段 ---------- */
 function gridSvg(){
   const {w,h} = state.area, g = state.grid; let s = '<g class="grid">';
-  for(let x=0; x<=w; x+=g){ const M=x%100===0; s += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
-  for(let y=0; y<=h; y+=g){ const M=y%100===0; s += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${M?'#cbd5e1':'#eef2f7'}" stroke-width="${M?0.7:0.3}"/>`; }
-  s += `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#94a3b8" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  for(let x=0; x<=w; x+=g){ const M=x%100===0; s += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="${M?'#b9d2e0':'#e3edf3'}" stroke-width="${M?0.7:0.3}"/>`; }
+  for(let y=0; y<=h; y+=g){ const M=y%100===0; s += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${M?'#b9d2e0':'#e3edf3'}" stroke-width="${M?0.7:0.3}"/>`; }
+  s += `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#8fb2c8" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
   return s + '</g>';
 }
 // 格線公尺標籤（畫最上層，含白色光暈避免被牆蓋住）
@@ -293,6 +294,42 @@ function roomsSvg(){
       + `<text class="dim" x="${r.cx}" y="${r.cy+18}" font-size="11" text-anchor="middle" fill="#5A6B7B" paint-order="stroke" stroke="#fff" stroke-width="3">${m2} m²</text></g>`;
   }).join('');
 }
+// 標題欄（圖框 cartouche）：右下角，固定 cm 字級比照 roomsSvg；pointer-events:none 不擋編輯
+function titleBlockSvg(){
+  const a=state.area, M=marginCm();
+  const name=state.name||'未命名';
+  const py=(a.w*a.h/PYEONG_CM2).toFixed(1);
+  const today=new Date().toISOString().slice(0,10);
+  const data=`${py}坪 · ${a.w}×${a.h}cm · ${today}`;
+  const nameSize=16, dataSize=11, pad=9, gap=8;
+  const wpx=(str,sz)=>[...str].reduce((s,ch)=>s+(/[\x00-\xff]/.test(ch)?sz*0.55:sz),0); // CJK≈1em, ascii≈0.55em
+  const W=Math.max(wpx(name,nameSize),wpx(data,dataSize))+pad*2;
+  const H=nameSize+gap+dataSize+pad*2;
+  const x1=-M+6, y2=a.h+M-6, x2=x1+W, y1=y2-H, xL=x1+pad;   // 左下角（避開右下縮放控制）
+  const divY=y1+pad+nameSize+gap*0.5;
+  return `<g class="titleblock" pointer-events="none">`
+    +`<rect x="${x1}" y="${y1}" width="${W}" height="${H}" fill="#FBFAF7" fill-opacity="0.94" stroke="#0E7FB8" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`
+    +`<line x1="${x1}" y1="${divY}" x2="${x2}" y2="${divY}" stroke="#0E7FB8" stroke-width="0.7" vector-effect="non-scaling-stroke"/>`
+    +`<text x="${xL}" y="${y1+pad+nameSize-2}" font-size="${nameSize}" font-weight="700" fill="#15324A" font-family="'Noto Sans TC',system-ui,sans-serif">${esc(name)}</text>`
+    +`<text x="${xL}" y="${y2-pad}" font-size="${dataSize}" fill="#5A6B7B" font-family="'JetBrains Mono',ui-monospace,monospace">${esc(data)}</text>`
+  +`</g>`;
+}
+// 圖形比例尺：以 cm 座標繪製 → 隨平面圖自動換算，列印/匯出仍正確。底部置中，交替黑白格
+function scaleBarSvg(){
+  const a=state.area, M=marginCm();
+  const NICE=[10,20,25,50,100,200,250,500,1000,2000];
+  const target=a.w/16; let seg=NICE[0]; for(const n of NICE){ if(n<=target) seg=n; }
+  const segCount=4, total=seg*segCount;
+  const barH=Math.max(6, a.w*0.01), fs=Math.max(9, a.w*0.013);
+  const x0=(a.w-total)/2, y0=a.h+M*0.42;
+  const mfmt=cm=>{ const m=cm/100; return Number.isInteger(m)?String(m):m.toFixed(1); };
+  let s=`<g class="scalebar" pointer-events="none">`;
+  for(let i=0;i<segCount;i++){ const sx=x0+i*seg, fill=i%2===0?'#15324A':'#FBFAF7';
+    s+=`<rect x="${sx}" y="${y0}" width="${seg}" height="${barH}" fill="${fill}" stroke="#0E7FB8" stroke-width="1" vector-effect="non-scaling-stroke"/>`; }
+  for(let i=0;i<=segCount;i++){ const tx=x0+i*seg, lbl=i===segCount?mfmt(total)+' m':mfmt(i*seg);
+    s+=`<text x="${tx}" y="${y0+barH+fs+2}" font-size="${fs}" text-anchor="middle" fill="#5A6B7B" font-family="'JetBrains Mono',ui-monospace,monospace">${lbl}</text>`; }
+  return s+`</g>`;
+}
 /* ---------- ② 量測線 + 家具間距 ---------- */
 function measureSvg(){
   if(!measure) return '';
@@ -332,6 +369,8 @@ function innerSvg(){
   s += gridLabelsSvg();
   state.walls.forEach(w => s += wallLabelSvg(w));
   if(showAreas) s += roomsSvg();
+  if(showTitleBlock) s += titleBlockSvg();
+  s += scaleBarSvg();
   const sg = single();
   if(sg && sg.kind==='furniture') s += gapDimsSvg(sg.o);
   s += measureSvg();
@@ -909,6 +948,7 @@ function bindUI(){
   $('modeMeasure').onclick= () => setMode('measure');
   $('addText').onclick    = addText;
   $('areaChk').onchange   = e => { showAreas=e.target.checked; render(); };
+  $('titleChk').onchange  = e => { showTitleBlock=e.target.checked; render(); };
 
   $('btnUndo').onclick = undo; $('btnRedo').onclick = redo;
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;

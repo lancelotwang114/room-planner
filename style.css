@@ -27,8 +27,8 @@ body{
   border-bottom:2px solid #0d2336;
 }
 .brand{font-weight:700; font-size:15px; letter-spacing:1px; display:flex; align-items:center; gap:7px}
-.brand-mark{color:var(--accent); font-size:18px}
-.brand .ver{font-family:var(--mono); font-size:11px; color:#7fa7c2; font-weight:500}
+.brand-mark{width:18px; height:18px; color:var(--accent); flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linejoin:round}
+.brand .ver{font-family:var(--mono); font-size:10px; color:#7fa7c2; font-weight:500; border:1px solid #2f4f6a; border-radius:4px; padding:1px 5px; letter-spacing:.5px}
 .toolgroups{display:flex; gap:10px; flex-wrap:wrap}
 .group{display:flex; gap:5px; align-items:center}
 .group + .group{border-left:1px solid #2a4b66; padding-left:10px}
@@ -166,9 +166,11 @@ input[type=text]{width:100%; font-family:var(--sans)}
 /* empty-state hint */
 .empty-hint{
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none;
-  color:var(--muted); font-size:14px; text-align:center; background:rgba(251,250,247,.85);
-  padding:14px 22px; border:1px dashed var(--line2); border-radius:10px;
+  color:var(--muted); font-size:13px; line-height:1.6; text-align:center; background:rgba(251,250,247,.92);
+  padding:16px 26px; border:1px solid var(--line2); border-radius:2px;
+  box-shadow:0 0 0 4px rgba(251,250,247,.92), 0 1px 12px rgba(21,50,74,.07);
 }
+.empty-hint .eyebrow{display:block; font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--accent); margin-bottom:8px}
 .empty-hint b{color:var(--accent)}
 
 /* ---- zoom control ---- */
