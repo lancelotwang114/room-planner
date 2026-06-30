@@ -294,25 +294,35 @@ function roomsSvg(){
       + `<text class="dim" x="${r.cx}" y="${r.cy+18}" font-size="11" text-anchor="middle" fill="#5A6B7B" paint-order="stroke" stroke="#fff" stroke-width="3">${m2} m²</text></g>`;
   }).join('');
 }
-// 標題欄（圖框 cartouche）：右下角，固定 cm 字級比照 roomsSvg；pointer-events:none 不擋編輯
+// 標題欄（圖框 cartouche）：左下角多格製圖式；固定 cm 字級；pointer-events:none 不擋編輯
 function titleBlockSvg(){
   const a=state.area, M=marginCm();
   const name=state.name||'未命名';
   const py=(a.w*a.h/PYEONG_CM2).toFixed(1);
   const today=new Date().toISOString().slice(0,10);
-  const data=`${py}坪 · ${a.w}×${a.h}cm · ${today}`;
-  const nameSize=16, dataSize=11, pad=9, gap=8;
-  const wpx=(str,sz)=>[...str].reduce((s,ch)=>s+(/[\x00-\xff]/.test(ch)?sz*0.55:sz),0); // CJK≈1em, ascii≈0.55em
-  const W=Math.max(wpx(name,nameSize),wpx(data,dataSize))+pad*2;
-  const H=nameSize+gap+dataSize+pad*2;
-  const x1=-M+6, y2=a.h+M-6, x2=x1+W, y1=y2-H, xL=x1+pad;   // 左下角（避開右下縮放控制）
-  const divY=y1+pad+nameSize+gap*0.5;
-  return `<g class="titleblock" pointer-events="none">`
+  const NS=15, LS=9, VS=12, pad=7, gap=3;
+  const SANS="'Noto Sans TC',system-ui,sans-serif", MONO="'JetBrains Mono',ui-monospace,monospace";
+  const wpx=(str,sz)=>[...str].reduce((s,ch)=>s+(/[\x00-\xff]/.test(ch)?sz*0.6:sz),0); // CJK≈1em, ascii≈0.6em
+  const row2=[['面積',`${py}坪`],['尺寸',`${a.w}×${a.h}`],['日期',today]];
+  const row3=[['圖名','房屋家具配置',false],['格線',`${state.grid}cm`,true]];
+  let colW=0; row2.forEach(([l,v])=>{ colW=Math.max(colW, wpx(v,VS), wpx(l,LS)); });
+  const W=Math.max((colW+pad*2)*3, wpx(name,NS)+pad*2), cw=W/3;
+  const nameH=NS+pad*2, cellH=LS+gap+VS+pad*2, H=nameH+cellH*2;
+  const x1=-M+6, y2=a.h+M-6, y1=y2-H, x2=x1+W, r1=y1+nameH, r2=r1+cellH;
+  const txt=(x,y,sz,fill,font,wt,str)=>`<text x="${x}" y="${y}" font-size="${sz}" fill="${fill}" font-family="${font}"${wt?` font-weight="${wt}"`:''}>${esc(str)}</text>`;
+  const vline=(x,ya,yb)=>`<line x1="${x}" y1="${ya}" x2="${x}" y2="${yb}" stroke="#0E7FB8" stroke-width="0.6" vector-effect="non-scaling-stroke"/>`;
+  const cell=(cx,top,label,value,mono)=>txt(cx+pad,top+pad+LS-1,LS,'#5A6B7B',MONO,0,label)
+    +txt(cx+pad,top+pad+LS+gap+VS-1,VS,'#15324A',mono?MONO:SANS,0,value);
+  let s=`<g class="titleblock" pointer-events="none">`
     +`<rect x="${x1}" y="${y1}" width="${W}" height="${H}" fill="#FBFAF7" fill-opacity="0.94" stroke="#0E7FB8" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`
-    +`<line x1="${x1}" y1="${divY}" x2="${x2}" y2="${divY}" stroke="#0E7FB8" stroke-width="0.7" vector-effect="non-scaling-stroke"/>`
-    +`<text x="${xL}" y="${y1+pad+nameSize-2}" font-size="${nameSize}" font-weight="700" fill="#15324A" font-family="'Noto Sans TC',system-ui,sans-serif">${esc(name)}</text>`
-    +`<text x="${xL}" y="${y2-pad}" font-size="${dataSize}" fill="#5A6B7B" font-family="'JetBrains Mono',ui-monospace,monospace">${esc(data)}</text>`
-  +`</g>`;
+    +txt(x1+pad,y1+pad+NS-2,NS,'#15324A',SANS,700,name)
+    +`<line x1="${x1}" y1="${r1}" x2="${x2}" y2="${r1}" stroke="#0E7FB8" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+    +`<line x1="${x1}" y1="${r2}" x2="${x2}" y2="${r2}" stroke="#0E7FB8" stroke-width="0.6" vector-effect="non-scaling-stroke"/>`;
+  row2.forEach(([l,v],i)=>{ s+=cell(x1+cw*i,r1,l,v,true); if(i>0) s+=vline(x1+cw*i,r1,r2); });
+  s+=cell(x1,r2,row3[0][0],row3[0][1],row3[0][2])
+    +cell(x1+cw*2,r2,row3[1][0],row3[1][1],row3[1][2])
+    +vline(x1+cw*2,r2,y2);
+  return s+`</g>`;
 }
 // 圖形比例尺：以 cm 座標繪製 → 隨平面圖自動換算，列印/匯出仍正確。底部置中，交替黑白格
 function scaleBarSvg(){
