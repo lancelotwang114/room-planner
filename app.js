@@ -750,14 +750,17 @@ function renderCatalog(){
   const box = $('catalog');
   const custom = state.customTypes.length
     ? `<div class="cat-group"><p class="cat-title">自訂</p><div class="cat-items">${state.customTypes.map(c =>
-        `<div class="furn-chip" data-type="${esc(c.n)}"><button class="chipx" data-del="${esc(c.n)}" title="刪除" aria-label="刪除">×</button><div class="swatch" style="background:${CUSTOM_COLOR}"></div><span class="nm">${esc(c.n)}</span><span class="dim">${c.w}×${c.d}</span></div>`).join('')}</div></div>`
+        `<div class="furn-chip" data-type="${esc(c.n)}" tabindex="0" role="button" aria-label="加入 ${esc(c.n)}"><button class="chipx" data-del="${esc(c.n)}" title="刪除" aria-label="刪除">×</button><div class="swatch" style="background:${CUSTOM_COLOR}"></div><span class="nm">${esc(c.n)}</span><span class="dim">${c.w}×${c.d}</span></div>`).join('')}</div></div>`
     : '';
   box.innerHTML = CATALOG.map(g => `<div class="cat-group"><p class="cat-title">${g.cat}</p>
     <div class="cat-items">${g.items.map(([n,w,d]) =>
-      `<div class="furn-chip" data-type="${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
+      `<div class="furn-chip" data-type="${n}" tabindex="0" role="button" aria-label="加入 ${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
     + custom
     + `<button class="toolwide" id="addCustom" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>自訂家具</span></button>`;
-  box.querySelectorAll('.furn-chip').forEach(chip => chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip)));
+  box.querySelectorAll('.furn-chip').forEach(chip => {
+    chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip));
+    chip.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); addFurniture(chip.dataset.type, state.area.w/2, state.area.h/2); showToast('已加入 '+chip.dataset.type); } });
+  });
   box.querySelectorAll('.chipx').forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); deleteCustomType(b.dataset.del); }); });
   $('addCustom').onclick = addCustomType;
 }
@@ -789,12 +792,13 @@ function renderTabs(){
   const bar = $('tabbar');
   const xIcon = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
   bar.innerHTML = doc.tabs.map((L,i) =>
-    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
+    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname" tabindex="0" role="tab" aria-selected="${i===doc.active}">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
     + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
     + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
   bar.querySelectorAll('.tab').forEach(t => {
     t.querySelector('.tabname').addEventListener('click', () => switchTab(+t.dataset.i));
     t.querySelector('.tabname').addEventListener('dblclick', () => renameTab(+t.dataset.i));
+    t.querySelector('.tabname').addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); switchTab(+t.dataset.i); } });
     const x = t.querySelector('.tabx'); if(x) x.addEventListener('click', ev => { ev.stopPropagation(); delTab(+x.dataset.del); });
   });
   $('tabAdd').onclick = addTab;
@@ -960,6 +964,8 @@ function bindUI(){
   $('btnHelp').onclick = () => { help.hidden=false; $('helpClose').focus(); };
   $('helpClose').onclick = closeHelp;
   help.addEventListener('click', e => { if(e.target===help) closeHelp(); });
+  // focus trap：modal 內唯一可聚焦是關閉鈕，Tab 不外漏到背景
+  help.addEventListener('keydown', e => { if(e.key==='Tab'){ e.preventDefault(); $('helpClose').focus(); } });
 
   // 底圖
   $('bgUpload').onclick = () => $('bgInput').click();

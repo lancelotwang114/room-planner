@@ -226,4 +226,5 @@ input[type=text]{width:100%; font-family:var(--sans)}
   .sidebar{width:100%; max-height:42vh; border-right:none; border-bottom:1px solid var(--line)}
   .brand{display:none}
   .topbar button span{display:none}
+  .topbar button{min-height:40px; min-width:40px; justify-content:center}
 }
