@@ -2,12 +2,15 @@
   --paper:#FFFFFF;       /* 面板白 */
   --paper-2:#FAFBFC;     /* 畫布外底，霧藍調 */
   --ink:#2D3B45;         /* 主文字（柔和深灰藍，非重製圖墨藍） */
-  --muted:#7C8791;       /* 次要文字灰 */
+  --muted:#5A6670;       /* 次要文字灰（對白底 ≥4.5:1） */
   --line:#EBEFF2;        /* 淺分隔線 */
   --line2:#DCE3E8;
   --accent:#6FA8DC;      /* 霧藍 */
   --accent-d:#4E8AC2;
   --danger:#D97060;      /* 柔珊瑚，取代刺眼紅 */
+  --hover-bg:#EDF3FA;    /* 按鈕 hover 底色 */
+  --chip-bg:#F1F5F9;     /* 標籤／小按鈕底色 */
+  --text-strong:#334155; /* 畫布上較深的輔助文字 */
   --radius:12px;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:'Noto Sans TC',system-ui,sans-serif;
@@ -37,7 +40,7 @@ body{
   border:1px solid var(--line2); padding:6px 11px; border-radius:10px; cursor:pointer;
   font-size:13px; font-family:inherit; transition:background .15s,border-color .15s,color .15s;
 }
-.topbar button:hover{background:#EDF3FA; border-color:var(--accent); color:var(--accent-d)}
+.topbar button:hover{background:var(--hover-bg); border-color:var(--accent); color:var(--accent-d)}
 .topbar button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
 .topbar button.primary:hover{background:var(--accent-d); border-color:var(--accent-d); color:#fff}
 .topbar button.danger:hover{background:var(--danger); border-color:var(--danger); color:#fff}
@@ -51,7 +54,7 @@ button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width
 }
 .tab{
   display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:10px 10px 0 0;
-  background:#EEF3F8; color:var(--muted); cursor:pointer; font-size:12px; white-space:nowrap; transition:.15s;
+  background:#EEF3F8; color:var(--muted); cursor:pointer; font-size:12px; white-space:nowrap; transition:background .15s,color .15s;
 }
 .tab:hover{background:#E2ECF5; color:var(--ink)}
 .tab.active{background:var(--paper); color:var(--ink); font-weight:500; box-shadow:inset 0 2px 0 var(--accent)}
@@ -96,7 +99,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .mode{
   flex:1; min-width:78px; display:flex; flex-direction:column; align-items:center; gap:4px;
   padding:10px 6px; border:1px solid var(--line2); background:#fff; border-radius:8px;
-  cursor:pointer; font-family:inherit; font-size:12px; color:var(--ink); transition:.15s;
+  cursor:pointer; font-family:inherit; font-size:12px; color:var(--ink); transition:border-color .15s;
 }
 .mode svg{width:18px; height:18px}
 .mode:hover{border-color:var(--accent)}
@@ -104,7 +107,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .toolwide{
   width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
   padding:9px; border:1px solid var(--line2); background:#fff; border-radius:8px;
-  cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink); transition:.15s;
+  cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink); transition:border-color .15s;
 }
 .toolwide:hover{border-color:var(--accent)}
 
@@ -114,11 +117,11 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .cat-items{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .furn-chip{
   position:relative; display:flex; flex-direction:column; gap:2px; padding:8px 9px; border-radius:8px;
-  border:1px solid var(--line2); cursor:grab; background:#fff; transition:.12s; user-select:none; touch-action:none;
+  border:1px solid var(--line2); cursor:grab; background:#fff; transition:border-color .12s,box-shadow .12s; user-select:none; touch-action:none;
 }
 .chipx{
   position:absolute; top:3px; right:3px; width:18px; height:18px; line-height:1; border:none;
-  background:#f1f5f9; color:var(--muted); border-radius:5px; cursor:pointer; font-size:14px; padding:0;
+  background:var(--chip-bg); color:var(--muted); border-radius:5px; cursor:pointer; font-size:14px; padding:0;
 }
 .chipx:hover{background:var(--danger); color:#fff}
 .furn-chip:hover{border-color:var(--accent); box-shadow:0 1px 5px rgba(21,50,74,.1)}
@@ -133,7 +136,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #editor .hint{margin:0}
 #editor button{
   font-family:inherit; font-size:12px; padding:8px 11px; border-radius:7px; cursor:pointer;
-  border:1px solid var(--line2); background:#fff; color:var(--ink); min-height:36px; transition:.15s;
+  border:1px solid var(--line2); background:#fff; color:var(--ink); min-height:36px; transition:border-color .15s,background .15s,color .15s;
 }
 #editor button:hover{border-color:var(--accent)}
 #editor button.del{border-color:var(--danger); color:var(--danger)}
@@ -151,7 +154,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 }
 #board .grid{pointer-events:none}
 #board text{font-family:var(--sans)}
-#board g.furn text{font-weight:500; fill:#334155}
+#board g.furn text{font-weight:500; fill:var(--text-strong)}
 #board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:#5A6B7B}
 #board g.furn,#board g.txt{cursor:move}
 #board g.wall{cursor:move}
@@ -181,7 +184,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 }
 .zoom-ctl button{
   min-width:40px; min-height:40px; display:inline-flex; align-items:center; justify-content:center;
-  border:none; background:#fff; color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:.15s;
+  border:none; background:#fff; color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:background .15s,color .15s;
 }
 .zoom-ctl button:hover{background:#eef3f6; color:var(--accent)}
 #zoomLabel{min-width:56px; border-left:1px solid var(--line); border-right:1px solid var(--line)}
@@ -193,7 +196,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .toast{
   position:absolute; left:50%; bottom:26px; transform:translateX(-50%) translateY(10px);
   background:var(--ink); color:#fff; padding:9px 18px; border-radius:20px; font-size:13px;
-  opacity:0; pointer-events:none; transition:.2s; white-space:nowrap; box-shadow:0 6px 20px rgba(21,50,74,.25);
+  opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; white-space:nowrap; box-shadow:0 6px 20px rgba(21,50,74,.25);
 }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
