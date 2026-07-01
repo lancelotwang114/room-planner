@@ -1,14 +1,14 @@
 :root{
-  --paper:#FBFAF7;      /* 製圖紙白 */
-  --paper-2:#F2EEE3;    /* 畫布外底 */
-  --ink:#15324A;        /* 製圖墨藍（chrome / 牆 / 主文字） */
-  --muted:#5A6B7B;      /* 標註灰 */
-  --line:#E4DECF;       /* 紙上細線 */
-  --line2:#d8d0bd;
-  --accent:#0E7FB8;     /* 藍曬青 */
-  --accent-d:#0a6797;
-  --danger:#A6432F;     /* 氧化鐵磚紅，貼紙調 */
-  --radius:9px;
+  --paper:#FFFFFF;       /* 面板白 */
+  --paper-2:#FAFBFC;     /* 畫布外底，霧藍調 */
+  --ink:#2D3B45;         /* 主文字（柔和深灰藍，非重製圖墨藍） */
+  --muted:#7C8791;       /* 次要文字灰 */
+  --line:#EBEFF2;        /* 淺分隔線 */
+  --line2:#DCE3E8;
+  --accent:#6FA8DC;      /* 霧藍 */
+  --accent-d:#4E8AC2;
+  --danger:#D97060;      /* 柔珊瑚，取代刺眼紅 */
+  --radius:12px;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:'Noto Sans TC',system-ui,sans-serif;
 }
@@ -23,46 +23,46 @@ body{
 /* ---- top bar ---- */
 .topbar{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:9px 16px; background:var(--ink); color:#eaf1f6; flex-wrap:wrap;
-  border-bottom:2px solid #0d2336;
+  padding:9px 16px; background:var(--paper); color:var(--ink); flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
 }
-.brand{font-weight:700; font-size:15px; letter-spacing:1px; display:flex; align-items:center; gap:7px}
+.brand{font-weight:700; font-size:15px; letter-spacing:.2px; display:flex; align-items:center; gap:7px}
 .brand-mark{width:18px; height:18px; color:var(--accent); flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linejoin:round}
-.brand .ver{font-family:var(--mono); font-size:10px; color:#7fa7c2; font-weight:500; border:1px solid #2f4f6a; border-radius:4px; padding:1px 5px; letter-spacing:.5px}
+.brand .ver{font-family:var(--sans); font-size:10px; color:var(--muted); font-weight:500; border:1px solid var(--line2); border-radius:5px; padding:1px 5px; letter-spacing:.5px}
 .toolgroups{display:flex; gap:10px; flex-wrap:wrap}
 .group{display:flex; gap:5px; align-items:center}
-.group + .group{border-left:1px solid #2a4b66; padding-left:10px}
+.group + .group{border-left:1px solid var(--line); padding-left:10px}
 .topbar button{
-  display:inline-flex; align-items:center; gap:6px; background:transparent; color:#cdddea;
-  border:1px solid #2f4f6a; padding:6px 11px; border-radius:8px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--ink);
+  border:1px solid var(--line2); padding:6px 11px; border-radius:10px; cursor:pointer;
   font-size:13px; font-family:inherit; transition:background .15s,border-color .15s,color .15s;
 }
-.topbar button:hover{background:#21425d; color:#fff}
+.topbar button:hover{background:#EDF3FA; border-color:var(--accent); color:var(--accent-d)}
 .topbar button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
-.topbar button.primary:hover{background:var(--accent-d)}
+.topbar button.primary:hover{background:var(--accent-d); border-color:var(--accent-d); color:#fff}
 .topbar button.danger:hover{background:var(--danger); border-color:var(--danger); color:#fff}
 /* 圖示只在按鈕內：限定 selector，避免 fill/stroke 繼承洩漏到畫布 SVG 文字 */
 button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
 
 /* ---- tab bar ---- */
 .tabbar{
-  display:flex; align-items:stretch; gap:4px; padding:6px 12px 0; background:var(--ink);
-  overflow-x:auto;
+  display:flex; align-items:stretch; gap:4px; padding:6px 12px 0; background:var(--paper-2);
+  overflow-x:auto; border-bottom:1px solid var(--line);
 }
 .tab{
-  display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:8px 8px 0 0;
-  background:#21425d; color:#cdddea; cursor:pointer; font-size:12px; white-space:nowrap; transition:.15s;
+  display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:10px 10px 0 0;
+  background:#EEF3F8; color:var(--muted); cursor:pointer; font-size:12px; white-space:nowrap; transition:.15s;
 }
-.tab:hover{background:#2a4f6e}
-.tab.active{background:var(--paper); color:var(--ink); font-weight:500}
+.tab:hover{background:#E2ECF5; color:var(--ink)}
+.tab.active{background:var(--paper); color:var(--ink); font-weight:500; box-shadow:inset 0 2px 0 var(--accent)}
 .tab .tabx{display:inline-flex; border:none; background:transparent; cursor:pointer; color:inherit; opacity:.6; padding:0}
 .tab .tabx:hover{opacity:1; color:var(--danger)}
 .tab .tabx svg{width:13px; height:13px}
 .tabbtn{
-  display:inline-flex; align-items:center; gap:4px; border:1px dashed #3a5a76; background:transparent;
-  color:#cdddea; cursor:pointer; border-radius:8px 8px 0 0; padding:6px 10px; font-size:12px; font-family:inherit;
+  display:inline-flex; align-items:center; gap:4px; border:1px dashed var(--line2); background:transparent;
+  color:var(--muted); cursor:pointer; border-radius:10px 10px 0 0; padding:6px 10px; font-size:12px; font-family:inherit;
 }
-.tabbtn:hover{background:#21425d}
+.tabbtn:hover{background:#EEF3F8; color:var(--accent-d)}
 .tabbtn svg{width:14px; height:14px}
 
 /* ---- layout ---- */
@@ -166,11 +166,11 @@ input[type=text]{width:100%; font-family:var(--sans)}
 /* empty-state hint */
 .empty-hint{
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none;
-  color:var(--muted); font-size:13px; line-height:1.6; text-align:center; background:rgba(251,250,247,.92);
-  padding:16px 26px; border:1px solid var(--line2); border-radius:2px;
-  box-shadow:0 0 0 4px rgba(251,250,247,.92), 0 1px 12px rgba(21,50,74,.07);
+  color:var(--muted); font-size:13px; line-height:1.6; text-align:center; background:rgba(255,255,255,.92);
+  padding:16px 26px; border:1px solid var(--line2); border-radius:var(--radius);
+  box-shadow:0 0 0 4px rgba(255,255,255,.92), 0 1px 12px rgba(45,59,69,.07);
 }
-.empty-hint .eyebrow{display:block; font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--accent); margin-bottom:8px}
+.empty-hint .eyebrow{display:block; font-family:var(--sans); font-size:11px; letter-spacing:1px; color:var(--accent-d); margin-bottom:8px; font-weight:500}
 .empty-hint b{color:var(--accent)}
 
 /* ---- zoom control ---- */
