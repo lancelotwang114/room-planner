@@ -797,7 +797,7 @@ function renderTabs(){
   const bar = $('tabbar');
   const xIcon = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
   bar.innerHTML = doc.tabs.map((L,i) =>
-    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname" tabindex="0" role="tab" aria-selected="${i===doc.active}">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
+    `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname" tabindex="0" role="tab" aria-selected="${i===doc.active}" title="雙擊可重新命名">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
     + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
     + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
   bar.querySelectorAll('.tab').forEach(t => {
@@ -1042,7 +1042,11 @@ function bindUI(){
 /* ---------- 範例：三房兩廳 ---------- */
 function loadExample(){
   const prev = snapshot();
-  const L = blankLayout('三房兩廳'); L.area = {w:1000, h:800};
+  const empty = !state.walls.length && !state.furniture.length && !state.texts.length && !state.bg;
+  const idx = empty ? doc.active : doc.tabs.length;
+  let name='三房兩廳', i=2;
+  while(doc.tabs.some((t,ti)=>t.name===name && ti!==idx)) name='三房兩廳 '+(i++);
+  const L = blankLayout(name); L.area = {w:1000, h:800};
   let n=1; const nid=()=>'x'+(n++);
   const W=(x1,y1,x2,y2)=>L.walls.push({id:nid(),x1,y1,x2,y2});
   const F=(type,x,y,rot,swing)=>{ const t=TYPE[type]; const f={id:nid(),type,x,y,w:t.w,d:t.d,rot:rot||0,label:''}; if(type==='門') f.swing=swing||0; L.furniture.push(f); };
@@ -1058,8 +1062,9 @@ function loadExample(){
   F('浴缸',830,390); F('馬桶',850,520); T(870,470,'衛浴',24);
   F('門',150,345,0,3); F('門',440,345,0,3); F('門',760,345,0,3);   // 三房門開向房內空地
   F('門',560,345,0,0); F('門',900,345,0,3); F('門',300,790,0,3);   // 餐廳/衛浴/前門
-  doc.tabs.push(L); setActive(doc.tabs.length-1); fixIds(); clearSel(); fitView();
-  commit(prev); render(); renderTabs(); renderCatalog(); syncInputs(); showToast('已新增「三房兩廳」分頁');
+  if(empty){ doc.tabs[doc.active]=L; setActive(doc.active); } else { doc.tabs.push(L); setActive(doc.tabs.length-1); }
+  fixIds(); clearSel(); fitView();
+  commit(prev); render(); renderTabs(); renderCatalog(); syncInputs(); showToast('已新增「'+name+'」分頁');
 }
 
 /* ---------- 啟動 ---------- */
