@@ -255,6 +255,8 @@ input[type=text]{width:100%; font-family:var(--sans)}
   .brand{display:none}
   .topbar button span{display:none}
   .topbar button{min-height:40px; min-width:40px; justify-content:center}
+  .mobile-only{display:inline-flex}
+  .sidebar-hidden .sidebar{display:none}
 }
 
 /* ---- 更多下拉選單（放媒體查詢後，確保 menu 內文字不被手機的 span:none 隱藏） ---- */
@@ -272,3 +274,18 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .menu button.danger:hover{background:var(--danger); border-color:transparent; color:#fff}
 .menu button span{display:inline}
 .menu-sep{height:1px; background:var(--line); margin:4px 2px}
+
+/* ---- 表單彈窗（取代 prompt） ---- */
+.dlg h2{margin:0 0 16px; font-size:17px}
+.dlg-row{display:flex; align-items:center; gap:10px; margin:0 0 12px; color:var(--ink); font-size:14px}
+.dlg-row>span{flex:0 0 56px}
+.dlg-row input{flex:1; width:auto}
+.dlg-row em{flex:0 0 auto; color:var(--muted); font-style:normal; font-size:12px}
+.dlg-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:20px}
+.dlg-actions button{padding:9px 18px; border-radius:8px; border:1px solid var(--line2); background:var(--surface-2); color:var(--ink); cursor:pointer; font-family:inherit; font-size:14px; min-height:40px}
+.dlg-actions .dlg-ok{background:var(--action); border-color:var(--action); color:#fff; font-weight:500}
+.dlg-actions .dlg-ok:hover{background:var(--action-d); border-color:var(--action-d)}
+.dlg-actions .dlg-cancel:hover{border-color:var(--accent)}
+
+/* 僅手機顯示（側欄收合鈕） */
+.mobile-only{display:none}

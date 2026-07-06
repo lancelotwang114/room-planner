@@ -70,6 +70,28 @@ function showToast(msg){
   toast.textContent = msg; toast.classList.add('show');
   clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
 }
+// 取代 prompt()：小表單彈窗，回傳 {欄位值} 或 null（取消）。Enter 確定、Esc / 點外面取消。
+function askForm(title, fields){
+  return new Promise(resolve => {
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    const rows = fields.map(f => `<label class="dlg-row"><span>${esc(f.label)}</span>`
+      + `<input id="dlg_${f.id}" type="${f.type||'text'}" value="${esc(f.value==null?'':f.value)}"`
+      + `${f.min!=null?` min="${f.min}"`:''}${f.max!=null?` max="${f.max}"`:''}${f.step!=null?` step="${f.step}"`:''}`
+      + ` placeholder="${esc(f.placeholder||'')}">${f.suffix?`<em>${esc(f.suffix)}</em>`:''}</label>`).join('');
+    ov.innerHTML = `<div class="modal dlg" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <h2>${esc(title)}</h2>${rows}
+      <div class="dlg-actions"><button type="button" class="dlg-cancel">取消</button><button type="button" class="dlg-ok">確定</button></div></div>`;
+    document.body.appendChild(ov);
+    const done = v => { ov.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const submit = () => { const out = {}; fields.forEach(f => out[f.id] = $(`dlg_${f.id}`).value); done(out); };
+    ov.querySelector('.dlg-ok').onclick = submit;
+    ov.querySelector('.dlg-cancel').onclick = () => done(null);
+    ov.addEventListener('mousedown', e => { if(e.target === ov) done(null); });
+    function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); done(null); } else if(e.key==='Enter' && e.target.tagName==='INPUT'){ e.preventDefault(); submit(); } }
+    document.addEventListener('keydown', onKey, true);
+    const first = ov.querySelector('input'); if(first){ first.focus(); first.select(); }
+  });
+}
 let H_CM = 6;   // 控制點半徑（公分，依縮放換算成 ~9px）
 function calcHandleSize(){ H_CM = (view.w / (svg.clientWidth||800)) * 9; }
 
@@ -486,10 +508,11 @@ function startCalibrate(e){
   if(!state.bg){ setMode('select'); return; }
   e.preventDefault(); const a=toSvg(e); measure={x1:a.x,y1:a.y,x2:a.x,y2:a.y}; render();
   function mv(ev){ const p=toSvg(ev); measure.x2=p.x; measure.y2=p.y; render(); }
-  function up(){ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
-    const len=Math.hypot(measure.x2-measure.x1, measure.y2-measure.y1); measure=null;
-    if(len>3){ const real=parseFloat(prompt('這條線實際幾公分？','100')); if(real>0){ const f=real/len; const prev=snapshot(); const b=state.bg; b.x*=f;b.y*=f;b.w*=f;b.h*=f; commit(prev); } }
-    setMode('select');
+  async function up(){ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+    const len=Math.hypot(measure.x2-measure.x1, measure.y2-measure.y1);
+    if(len>3){ const r=await askForm('校準比例', [{id:'cm',label:'實際長度',type:'number',value:100,min:1,suffix:'cm'}]);
+      if(r){ const real=parseFloat(r.cm); if(real>0){ const f=real/len; const prev=snapshot(); const b=state.bg; b.x*=f;b.y*=f;b.w*=f;b.h*=f; commit(prev); } } }
+    measure=null; setMode('select');
   }
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
 }
@@ -802,9 +825,15 @@ function renderCatalog(){
   box.querySelectorAll('.chipx').forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); deleteCustomType(b.dataset.del); }); });
   $('addCustom').onclick = addCustomType;
 }
-function addCustomType(){
-  const n = (prompt('家具名稱？') || '').trim(); if(!n) return;
-  const w = parseInt(prompt('寬度 cm？', '60'), 10), d = parseInt(prompt('深度 cm？', '60'), 10);
+async function addCustomType(){
+  const r = await askForm('自訂家具', [
+    {id:'n', label:'名稱', placeholder:'例如：書櫃'},
+    {id:'w', label:'寬', type:'number', value:60, min:1, step:5, suffix:'cm'},
+    {id:'d', label:'深', type:'number', value:60, min:1, step:5, suffix:'cm'},
+  ]);
+  if(!r) return;
+  const n = (r.n||'').trim(); const w = parseInt(r.w,10), d = parseInt(r.d,10);
+  if(!n){ showToast('請輸入名稱'); return; }
   if(!(w>0) || !(d>0)){ showToast('尺寸需為正整數'); return; }
   const prev = snapshot();
   state.customTypes = state.customTypes.filter(c => c.n !== n);
@@ -849,7 +878,7 @@ function dupTab(){
   doc.tabs.splice(doc.active+1, 0, copy); setActive(doc.active+1); fixIds();   // 重編 id 避免衝突
   clearSel(); fitView(); commit(prev); render(); renderTabs(); renderCatalog(); syncInputs();
 }
-function renameTab(i){ const n=(prompt('分頁名稱？', doc.tabs[i].name)||'').trim(); if(!n) return; const p=snapshot(); doc.tabs[i].name=n; commit(p); renderTabs(); }
+async function renameTab(i){ const r=await askForm('分頁名稱',[{id:'name',label:'名稱',value:doc.tabs[i].name}]); if(!r) return; const n=(r.name||'').trim(); if(!n) return; const p=snapshot(); doc.tabs[i].name=n; commit(p); renderTabs(); }
 function delTab(i){ if(doc.tabs.length<=1) return; if(!confirm(`刪除分頁「${doc.tabs[i].name}」？`)) return;
   const prev=snapshot(); doc.tabs.splice(i,1); setActive(Math.max(0, doc.active>=i?doc.active-1:doc.active));
   clearSel(); fitView(); commit(prev); render(); renderTabs(); renderCatalog(); syncInputs(); }
@@ -1016,6 +1045,7 @@ function bindUI(){
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;
   $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan; $('btnLong').onclick = exportAllPNG;
   $('btnTheme').onclick = toggleTheme;
+  $('btnSidebar').onclick = () => document.body.classList.toggle('sidebar-hidden');
 
   // 更多下拉
   const moreMenu = $('moreMenu'), btnMore = $('btnMore');
