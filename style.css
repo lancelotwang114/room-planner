@@ -7,9 +7,13 @@
   --line2:#DCE3E8;
   --accent:#6FA8DC;      /* 霧藍 */
   --accent-d:#4E8AC2;
+  --accent-soft:rgba(111,168,220,.14); /* 框選填色，走 accent */
   --danger:#D97060;      /* 柔珊瑚，取代刺眼紅 */
   --hover-bg:#EDF3FA;    /* 按鈕 hover 底色 */
   --chip-bg:#F1F5F9;     /* 標籤／小按鈕底色 */
+  --tab-bg:#EEF3F8;      /* 分頁未選底 */
+  --tab-bg-h:#E2ECF5;    /* 分頁 hover 底 */
+  --soft:#EEF2F6;        /* kbd／小控制項 hover 底，收斂原本三個近似灰 */
   --text-strong:#334155; /* 畫布上較深的輔助文字 */
   --radius:12px;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -54,9 +58,9 @@ button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width
 }
 .tab{
   display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:10px 10px 0 0;
-  background:#EEF3F8; color:var(--muted); cursor:pointer; font-size:12px; white-space:nowrap; transition:background .15s,color .15s;
+  background:var(--tab-bg); color:var(--muted); cursor:pointer; font-size:12px; white-space:nowrap; transition:background .15s,color .15s;
 }
-.tab:hover{background:#E2ECF5; color:var(--ink)}
+.tab:hover{background:var(--tab-bg-h); color:var(--ink)}
 .tab.active{background:var(--paper); color:var(--ink); font-weight:500; box-shadow:inset 0 2px 0 var(--accent)}
 .tab .tabx{display:inline-flex; border:none; background:transparent; cursor:pointer; color:inherit; opacity:.6; padding:0}
 .tab .tabx:hover{opacity:1; color:var(--danger)}
@@ -65,7 +69,7 @@ button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width
   display:inline-flex; align-items:center; gap:4px; border:1px dashed var(--line2); background:transparent;
   color:var(--muted); cursor:pointer; border-radius:10px 10px 0 0; padding:6px 10px; font-size:12px; font-family:inherit;
 }
-.tabbtn:hover{background:#EEF3F8; color:var(--accent-d)}
+.tabbtn:hover{background:var(--tab-bg); color:var(--accent-d)}
 .tabbtn svg{width:14px; height:14px}
 
 /* ---- layout ---- */
@@ -155,7 +159,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #board .grid{pointer-events:none}
 #board text{font-family:var(--sans)}
 #board g.furn text{font-weight:500; fill:var(--text-strong)}
-#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:#5A6B7B}
+#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:var(--muted)}
 #board g.furn,#board g.txt{cursor:move}
 #board g.wall{cursor:move}
 #board.mode-wall{cursor:crosshair}
@@ -163,7 +167,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #board .handle{cursor:nwse-resize; fill:#fff; stroke:var(--accent); stroke-width:1.5; vector-effect:non-scaling-stroke}
 #board .handle.rot{cursor:grab; fill:var(--accent)}
 #board .wend{cursor:move; fill:#fff; stroke:var(--accent); stroke-width:1.5; vector-effect:non-scaling-stroke}
-#board .marquee{fill:rgba(14,127,184,.10); stroke:var(--accent); stroke-width:1; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
+#board .marquee{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
 #board .guide{stroke:#e11d48; stroke-width:1; vector-effect:non-scaling-stroke; pointer-events:none; stroke-dasharray:4 3}
 
 /* empty-state hint */
@@ -173,7 +177,6 @@ input[type=text]{width:100%; font-family:var(--sans)}
   padding:16px 26px; border:1px solid var(--line2); border-radius:var(--radius);
   box-shadow:0 0 0 4px rgba(255,255,255,.92), 0 1px 12px rgba(45,59,69,.07);
 }
-.empty-hint .eyebrow{display:block; font-family:var(--sans); font-size:11px; letter-spacing:1px; color:var(--accent-d); margin-bottom:8px; font-weight:500}
 .empty-hint b{color:var(--accent)}
 
 /* ---- zoom control ---- */
@@ -186,7 +189,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
   min-width:40px; min-height:40px; display:inline-flex; align-items:center; justify-content:center;
   border:none; background:#fff; color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:background .15s,color .15s;
 }
-.zoom-ctl button:hover{background:#eef3f6; color:var(--accent)}
+.zoom-ctl button:hover{background:var(--soft); color:var(--accent)}
 #zoomLabel{min-width:56px; border-left:1px solid var(--line); border-right:1px solid var(--line)}
 
 /* ---- palette drag ghost ---- */
@@ -215,10 +218,10 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .modal ul{margin:0; padding-left:20px}
 .modal li{margin:5px 0; font-size:13px; line-height:1.6; color:var(--ink)}
 .modal b{color:var(--ink)}
-.modal kbd{font-family:var(--mono); font-size:11px; background:#eef2f6; border:1px solid var(--line2); border-radius:4px; padding:1px 5px}
+.modal kbd{font-family:var(--mono); font-size:11px; background:var(--soft); border:1px solid var(--line2); border-radius:4px; padding:1px 5px}
 .modal .keys li{list-style:none}
 .modal-x{
-  position:absolute; top:14px; right:16px; width:32px; height:32px; border:none; background:#eef2f6;
+  position:absolute; top:14px; right:16px; width:32px; height:32px; border:none; background:var(--soft);
   border-radius:8px; cursor:pointer; font-size:18px; color:var(--muted); line-height:1;
 }
 .modal-x:hover{background:var(--danger); color:#fff}
