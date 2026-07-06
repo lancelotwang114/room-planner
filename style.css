@@ -30,17 +30,19 @@
   color-scheme:dark;
   --paper:#1B2530;
   --paper-2:#101820;
-  --surface-2:#212E39;
+  --surface-2:#2B3C4D;   /* 抬升控件底，跟面板拉出層次 */
   --ink:#E4EAEF;
   --muted:#93A1AC;
-  --line:#28363F;
-  --line2:#3A4854;
-  --hover-bg:#243541;
+  --line:#40505E;        /* 分隔線：深色下需更亮才看得見（vs 面板 ~1.9:1） */
+  --line2:#5E7083;       /* 控件邊框：更亮，讓輸入框/按鈕邊界明確（~2.2:1） */
+  --hover-bg:#2A3B4B;
   --chip-bg:#2B3A45;
   --tab-bg:#1F2B35;
   --tab-bg-h:#2A3A46;
-  --soft:#293742;
+  --soft:#2B3C4D;
 }
+/* 深色時畫布微降白，減少暗房眩光；匯出 SVG 仍自帶純白，下載不受影響 */
+:root[data-theme="dark"] #board{background:#F0F2F5}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{

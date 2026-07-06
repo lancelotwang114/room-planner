@@ -901,6 +901,7 @@ const THEME_LS = 'roomplanner_theme';
 function applyTheme(dark){
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   const b = $('btnTheme'); if(b){ const s = b.querySelector('span'); if(s) s.textContent = dark ? '淺色' : '深色'; }
+  const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = dark ? '#1B2530' : '#FFFFFF';
 }
 function initTheme(){
   const saved = localStorage.getItem(THEME_LS);
