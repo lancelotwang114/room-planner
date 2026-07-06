@@ -365,7 +365,7 @@ function gapDimsSvg(f){
 }
 function innerSvg(){
   let s = '';
-  if(state.bg) s += `<image href="${state.bg.src}" x="${state.bg.x}" y="${state.bg.y}" width="${state.bg.w}" height="${state.bg.h}" opacity="${state.bg.opacity}" preserveAspectRatio="none" pointer-events="none"/>`;
+  if(state.bg) s += `<image href="${esc(state.bg.src)}" x="${state.bg.x}" y="${state.bg.y}" width="${state.bg.w}" height="${state.bg.h}" opacity="${state.bg.opacity}" preserveAspectRatio="none" pointer-events="none"/>`;
   s += gridSvg();
   state.walls.forEach(w => s += wallSvg(w));
   state.furniture.forEach(f => s += furnSvg(f));
@@ -876,7 +876,7 @@ svg{width:100%;height:auto;background:#fff;border:1px solid #cbd5e1;border-radiu
 .tip{font-size:12px;color:#64748b}</style></head>
 <body><div class="wrap"><h1>🏠 房屋家具配置</h1>${blocks}
 <p class="tip">此檔由「房屋家具配置工具」產生，可拖回工具讀取續編。</p></div>
-<script type="application/json" id="floorplan-data">${snapshot()}</script></body></html>`;
+<script type="application/json" id="floorplan-data">${snapshot().replace(/</g,'\\u003c')}</script></body></html>`;
 }
 function download(filename, text, mime){
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type:mime})); a.download = filename;
