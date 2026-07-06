@@ -391,7 +391,7 @@ function render(){
   calcHandleSize();
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   svg.className.baseVal = '';
-  svg.classList.toggle('mode-wall', mode==='wall');
+  svg.classList.toggle('mode-wall', mode==='wall' || mode==='room');
   svg.classList.toggle('mode-measure', mode==='measure');
   svg.classList.toggle('mode-pan', mode==='pan' || spaceDown);
   svg.innerHTML = innerSvg();
@@ -651,6 +651,30 @@ function startWallDraw(e){
   }
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
 }
+/* 畫房間：拖一個方框，一次生成四面外牆 */
+function startRoomDraw(e){
+  e.preventDefault();
+  const a = {x:snap(toSvg(e).x), y:snap(toSvg(e).y)};
+  const rect = document.createElementNS(NS,'rect');
+  Object.entries({fill:'rgba(37,99,235,.06)',stroke:'#2563eb','stroke-width':WALL_THICK,'stroke-linejoin':'round','stroke-dasharray':'14 8',opacity:'0.75'}).forEach(([k,v])=>rect.setAttribute(k,v));
+  svg.appendChild(rect);
+  const box = b => ({x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(b.x-a.x), h:Math.abs(b.y-a.y)});
+  function mv(ev){ const bx = box({x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)});
+    rect.setAttribute('x',bx.x); rect.setAttribute('y',bx.y); rect.setAttribute('width',bx.w); rect.setAttribute('height',bx.h); }
+  function up(ev){
+    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); rect.remove();
+    const bx = box({x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)});
+    if(bx.w >= state.grid && bx.h >= state.grid){
+      const prev = snapshot(); const x1=bx.x, y1=bx.y, x2=bx.x+bx.w, y2=bx.y+bx.h;
+      state.walls.push({id:uid(),x1,y1,x2,y2:y1,t:WALL_THICK});   // 上
+      state.walls.push({id:uid(),x1:x2,y1,x2,y2,t:WALL_THICK});   // 右
+      state.walls.push({id:uid(),x1,y1:y2,x2,y2,t:WALL_THICK});   // 下
+      state.walls.push({id:uid(),x1,y1,x2:x1,y2,t:WALL_THICK});   // 左
+      commit(prev); render(); showToast('已建立房間（四面牆）');
+    } else render();
+  }
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+}
 function startWallEnd(e, w, end){
   const prev = snapshot();
   function mv(ev){ const p={x:snap(toSvg(ev).x),y:snap(toSvg(ev).y)};
@@ -833,8 +857,9 @@ function delTab(i){ if(doc.tabs.length<=1) return; if(!confirm(`刪除分頁「$
 /* ---------- 模式 ---------- */
 function setMode(m){
   mode = m;
-  ['Select','Pan','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.classList.toggle('active', mode===x.toLowerCase()); });
-  $('modeHint').textContent = m==='wall' ? '按住拖曳畫一道牆，端點吸附格線。'
+  ['Select','Pan','Room','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.classList.toggle('active', mode===x.toLowerCase()); });
+  $('modeHint').textContent = m==='room' ? '拖一個方框，一次生成四面外牆。'
+    : m==='wall' ? '按住拖曳畫一道牆，端點吸附格線。'
     : m==='pan' ? '拖曳畫布平移；滾輪縮放。'
     : m==='measure' ? '拖一條線量距離（cm）；Esc 清除。'
     : m==='calibrate' ? '在底圖上沿已知長度拖一條線，放開後輸入實際公分。'
@@ -980,6 +1005,7 @@ function bindUI(){
 
   $('modeSelect').onclick = () => setMode('select');
   $('modePan').onclick    = () => setMode('pan');
+  $('modeRoom').onclick   = () => setMode('room');
   $('modeWall').onclick   = () => setMode('wall');
   $('modeMeasure').onclick= () => setMode('measure');
   $('addText').onclick    = addText;
@@ -1036,6 +1062,7 @@ function bindUI(){
   // 畫布背景 pointerdown
   svg.addEventListener('pointerdown', e => {
     if(spaceDown || e.button===1){ startPan(e); return; }
+    if(mode==='room'){ startRoomDraw(e); return; }
     if(mode==='wall'){ startWallDraw(e); return; }
     if(mode==='measure'){ startMeasure(e); return; }
     if(mode==='calibrate'){ startCalibrate(e); return; }
