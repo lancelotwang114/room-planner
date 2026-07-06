@@ -256,3 +256,19 @@ input[type=text]{width:100%; font-family:var(--sans)}
   .topbar button span{display:none}
   .topbar button{min-height:40px; min-width:40px; justify-content:center}
 }
+
+/* ---- 更多下拉選單（放媒體查詢後，確保 menu 內文字不被手機的 span:none 隱藏） ---- */
+.group-right{margin-left:auto}
+.more-wrap{position:relative}
+#btnMore[aria-expanded="true"]{background:var(--hover-bg); border-color:var(--accent); color:var(--accent-d)}
+.menu{
+  position:absolute; top:calc(100% + 6px); right:0; z-index:50; min-width:200px;
+  background:var(--paper); border:1px solid var(--line2); border-radius:10px; padding:6px;
+  display:flex; flex-direction:column; gap:2px; box-shadow:0 10px 30px rgba(21,50,74,.18);
+}
+.menu[hidden]{display:none}
+.menu button{width:100%; min-width:0; justify-content:flex-start; border:none; background:transparent; padding:9px 10px; border-radius:7px; min-height:40px; color:var(--ink)}
+.menu button:hover{background:var(--hover-bg); border-color:transparent; color:var(--ink)}
+.menu button.danger:hover{background:var(--danger); border-color:transparent; color:#fff}
+.menu button span{display:inline}
+.menu-sep{height:1px; background:var(--line); margin:4px 2px}

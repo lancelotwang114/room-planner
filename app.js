@@ -1017,6 +1017,13 @@ function bindUI(){
   $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan; $('btnLong').onclick = exportAllPNG;
   $('btnTheme').onclick = toggleTheme;
 
+  // 更多下拉
+  const moreMenu = $('moreMenu'), btnMore = $('btnMore');
+  const closeMore = () => { if(moreMenu.hidden) return; moreMenu.hidden = true; btnMore.setAttribute('aria-expanded','false'); };
+  btnMore.onclick = e => { e.stopPropagation(); const willOpen = moreMenu.hidden; moreMenu.hidden = !willOpen; btnMore.setAttribute('aria-expanded', String(willOpen)); };
+  moreMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', closeMore));
+  document.addEventListener('click', e => { if(!moreMenu.hidden && !btnMore.parentElement.contains(e.target)) closeMore(); });
+
   // 說明
   const help=$('helpOverlay');
   const closeHelp = () => { help.hidden=true; $('btnHelp').focus(); };
@@ -1074,7 +1081,7 @@ function bindUI(){
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } endEdit(); measure=null; clearSel(); render(); return; }
+    if(e.key==='Escape'){ if(!moreMenu.hidden){ closeMore(); return; } const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } endEdit(); measure=null; clearSel(); render(); return; }
     if(typing) return;
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
