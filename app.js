@@ -32,8 +32,9 @@ let pinching = false;              // 雙指縮放中
 const NS = 'http://www.w3.org/2000/svg';
 const FCOLORS = ['#fecaca','#fed7aa','#fde68a','#bbf7d0','#a5f3fc','#c7d2fe','#f5d0fe','#e2e8f0'];
 
+function todayStr(){ return new Date().toISOString().slice(0,10); }
 function blankLayout(name){
-  return { name, area:{w:600,h:500}, grid:10, snap:true, walls:[], furniture:[], texts:[], customTypes:[] };
+  return { name, date:todayStr(), area:{w:600,h:500}, grid:10, snap:true, walls:[], furniture:[], texts:[], customTypes:[] };
 }
 function blankDoc(){ return { version:2, active:0, tabs:[ blankLayout('格局 1') ] }; }
 function setActive(i){ doc.active = i; state = doc.tabs[i]; }
@@ -299,11 +300,11 @@ function titleBlockSvg(){
   const a=state.area, M=marginCm();
   const name=state.name||'未命名';
   const py=(a.w*a.h/PYEONG_CM2).toFixed(1);
-  const today=new Date().toISOString().slice(0,10);
+  const dstr=state.date||todayStr();
   const NS=14, LS=8, VS=11, pad=4, gap=2;
   const SANS="'Noto Sans TC',system-ui,sans-serif", MONO="'JetBrains Mono',ui-monospace,monospace";
   const wpx=(str,sz)=>[...str].reduce((s,ch)=>s+(/[\x00-\xff]/.test(ch)?sz*0.6:sz),0); // CJK≈1em, ascii≈0.6em
-  const cells=[['面積',`${py}坪`],['尺寸',`${a.w}×${a.h}`],['日期',today]];
+  const cells=[['面積',`${py}坪`],['尺寸',`${a.w}×${a.h}`],['日期',dstr]];
   let colW=0; cells.forEach(([l,v])=>{ colW=Math.max(colW, wpx(v,VS), wpx(l,LS)); });
   const W=Math.max((colW+pad*2)*3, wpx(name,NS)+pad*2), cw=W/3;
   const nameH=NS+pad*2, cellH=LS+gap+VS+pad*2, H=nameH+cellH;   // 2 列：名稱橫幅 + 一排格，控制總高 ≤ 邊距
