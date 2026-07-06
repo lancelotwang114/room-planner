@@ -1,6 +1,8 @@
 :root{
+  color-scheme:light;
   --paper:#FFFFFF;       /* 面板白 */
   --paper-2:#FAFBFC;     /* 畫布外底，霧藍調 */
+  --surface-2:#FFFFFF;   /* 可互動控件底（chip/input/mode）；深色時比面板略亮做層次 */
   --ink:#2D3B45;         /* 主文字（柔和深灰藍，非重製圖墨藍） */
   --muted:#5A6670;       /* 次要文字灰（對白底 ≥4.5:1） */
   --line:#EBEFF2;        /* 淺分隔線 */
@@ -8,16 +10,36 @@
   --accent:#6FA8DC;      /* 霧藍 */
   --accent-d:#4E8AC2;
   --accent-soft:rgba(111,168,220,.14); /* 框選填色，走 accent */
+  --action:#A25A16;      /* 主動作色（存檔），暖琥珀與霧藍拉開層級；配白字達 WCAG AA */
+  --action-d:#89490F;
   --danger:#D97060;      /* 柔珊瑚，取代刺眼紅 */
   --hover-bg:#EDF3FA;    /* 按鈕 hover 底色 */
   --chip-bg:#F1F5F9;     /* 標籤／小按鈕底色 */
   --tab-bg:#EEF3F8;      /* 分頁未選底 */
   --tab-bg-h:#E2ECF5;    /* 分頁 hover 底 */
   --soft:#EEF2F6;        /* kbd／小控制項 hover 底，收斂原本三個近似灰 */
-  --text-strong:#334155; /* 畫布上較深的輔助文字 */
+  --text-strong:#334155; /* 畫布主輔助文字（固定，不隨深色翻轉——畫布恆為白紙） */
+  --ink-dim:#5A6B7B;     /* 畫布次要文字（固定，同上） */
+  --toast-bg:#2D3B45;    /* 提示膠囊固定深底，深淺色皆同 */
   --radius:12px;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:'Noto Sans TC',system-ui,sans-serif;
+}
+/* 深色：只翻 chrome，畫布(#board)恆白。品牌色/畫布墨色/toast 不覆蓋→保留淺色值 */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#1B2530;
+  --paper-2:#101820;
+  --surface-2:#212E39;
+  --ink:#E4EAEF;
+  --muted:#93A1AC;
+  --line:#28363F;
+  --line2:#3A4854;
+  --hover-bg:#243541;
+  --chip-bg:#2B3A45;
+  --tab-bg:#1F2B35;
+  --tab-bg-h:#2A3A46;
+  --soft:#293742;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -41,12 +63,12 @@ body{
 .group + .group{border-left:1px solid var(--line); padding-left:10px}
 .topbar button{
   display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--ink);
-  border:1px solid var(--line2); padding:6px 11px; border-radius:10px; cursor:pointer;
+  border:1px solid var(--line2); padding:7px 11px; min-height:34px; border-radius:10px; cursor:pointer;
   font-size:13px; font-family:inherit; transition:background .15s,border-color .15s,color .15s;
 }
 .topbar button:hover{background:var(--hover-bg); border-color:var(--accent); color:var(--accent-d)}
-.topbar button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
-.topbar button.primary:hover{background:var(--accent-d); border-color:var(--accent-d); color:#fff}
+.topbar button.primary{background:var(--action); border-color:var(--action); color:#fff; font-weight:500}
+.topbar button.primary:hover{background:var(--action-d); border-color:var(--action-d); color:#fff}
 .topbar button.danger:hover{background:var(--danger); border-color:var(--danger); color:#fff}
 /* 圖示只在按鈕內：限定 selector，避免 fill/stroke 繼承洩漏到畫布 SVG 文字 */
 button svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
@@ -90,7 +112,7 @@ label{display:flex; align-items:center; gap:5px; color:var(--muted); font-size:1
 label.chk{cursor:pointer}
 input[type=number],select,input[type=text]{
   font-family:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line2);
-  border-radius:7px; background:#fff; color:var(--ink); width:74px;
+  border-radius:7px; background:var(--surface-2); color:var(--ink); width:74px;
 }
 input.num{font-family:var(--mono)}
 input[type=text]{width:100%; font-family:var(--sans)}
@@ -102,7 +124,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .modes{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px}
 .mode{
   flex:1; min-width:78px; display:flex; flex-direction:column; align-items:center; gap:4px;
-  padding:10px 6px; border:1px solid var(--line2); background:#fff; border-radius:8px;
+  padding:10px 6px; border:1px solid var(--line2); background:var(--surface-2); border-radius:8px;
   cursor:pointer; font-family:inherit; font-size:12px; color:var(--ink); transition:border-color .15s;
 }
 .mode svg{width:18px; height:18px}
@@ -110,7 +132,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .mode.active{background:var(--accent); border-color:var(--accent); color:#fff}
 .toolwide{
   width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
-  padding:9px; border:1px solid var(--line2); background:#fff; border-radius:8px;
+  padding:9px; border:1px solid var(--line2); background:var(--surface-2); border-radius:8px;
   cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink); transition:border-color .15s;
 }
 .toolwide:hover{border-color:var(--accent)}
@@ -121,7 +143,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .cat-items{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .furn-chip{
   position:relative; display:flex; flex-direction:column; gap:2px; padding:8px 9px; border-radius:8px;
-  border:1px solid var(--line2); cursor:grab; background:#fff; transition:border-color .12s,box-shadow .12s; user-select:none; touch-action:none;
+  border:1px solid var(--line2); cursor:grab; background:var(--surface-2); transition:border-color .12s,box-shadow .12s; user-select:none; touch-action:none;
 }
 .chipx{
   position:absolute; top:3px; right:3px; width:18px; height:18px; line-height:1; border:none;
@@ -140,7 +162,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #editor .hint{margin:0}
 #editor button{
   font-family:inherit; font-size:12px; padding:8px 11px; border-radius:7px; cursor:pointer;
-  border:1px solid var(--line2); background:#fff; color:var(--ink); min-height:36px; transition:border-color .15s,background .15s,color .15s;
+  border:1px solid var(--line2); background:var(--surface-2); color:var(--ink); min-height:36px; transition:border-color .15s,background .15s,color .15s;
 }
 #editor button:hover{border-color:var(--accent)}
 #editor button.del{border-color:var(--danger); color:var(--danger)}
@@ -148,7 +170,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #editor .swatches{gap:5px}
 #editor .sw{width:24px; height:24px; min-height:0; padding:0; border-radius:6px; border:1px solid var(--line2)}
 #editor .sw:hover{border-color:var(--accent)}
-#editor .sw.reset{background:#fff; color:var(--muted)}
+#editor .sw.reset{background:var(--surface-2); color:var(--muted)}
 
 /* ---- canvas ---- */
 .canvas-wrap{flex:1; min-width:0; position:relative; display:flex; padding:18px; background:var(--paper-2)}
@@ -159,7 +181,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 #board .grid{pointer-events:none}
 #board text{font-family:var(--sans)}
 #board g.furn text{font-weight:500; fill:var(--text-strong)}
-#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:var(--muted)}
+#board text.dim{font-family:var(--mono); font-variant-numeric:tabular-nums; fill:var(--ink-dim)}
 #board g.furn,#board g.txt{cursor:move}
 #board g.wall{cursor:move}
 #board.mode-wall{cursor:crosshair}
@@ -182,12 +204,12 @@ input[type=text]{width:100%; font-family:var(--sans)}
 /* ---- zoom control ---- */
 .zoom-ctl{
   position:absolute; right:28px; bottom:28px; z-index:20; display:flex; gap:1px;
-  background:#fff; border:1px solid var(--line2); border-radius:10px; overflow:hidden;
+  background:var(--surface-2); border:1px solid var(--line2); border-radius:10px; overflow:hidden;
   box-shadow:0 4px 16px rgba(21,50,74,.14);
 }
 .zoom-ctl button{
   min-width:40px; min-height:40px; display:inline-flex; align-items:center; justify-content:center;
-  border:none; background:#fff; color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:background .15s,color .15s;
+  border:none; background:var(--surface-2); color:var(--ink); cursor:pointer; font-family:var(--mono); font-size:13px; transition:background .15s,color .15s;
 }
 .zoom-ctl button:hover{background:var(--soft); color:var(--accent)}
 #zoomLabel{min-width:56px; border-left:1px solid var(--line); border-right:1px solid var(--line)}
@@ -198,7 +220,7 @@ input[type=text]{width:100%; font-family:var(--sans)}
 /* ---- toast ---- */
 .toast{
   position:absolute; left:50%; bottom:26px; transform:translateX(-50%) translateY(10px);
-  background:var(--ink); color:#fff; padding:9px 18px; border-radius:20px; font-size:13px;
+  background:var(--toast-bg); color:#fff; padding:9px 18px; border-radius:20px; font-size:13px;
   opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; white-space:nowrap; box-shadow:0 6px 20px rgba(21,50,74,.25);
 }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}

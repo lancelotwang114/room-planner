@@ -833,6 +833,22 @@ function setMode(m){
   render();
 }
 
+/* ---------- 深淺色 ---------- */
+const THEME_LS = 'roomplanner_theme';
+function applyTheme(dark){
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const b = $('btnTheme'); if(b){ const s = b.querySelector('span'); if(s) s.textContent = dark ? '淺色' : '深色'; }
+}
+function initTheme(){
+  const saved = localStorage.getItem(THEME_LS);
+  const dark = saved ? saved==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+  applyTheme(dark);
+}
+function toggleTheme(){
+  const dark = document.documentElement.dataset.theme !== 'dark';
+  applyTheme(dark); localStorage.setItem(THEME_LS, dark ? 'dark' : 'light');
+}
+
 /* ---------- 存檔 / 讀取 / 輸出 ---------- */
 function buildStandaloneSvg(forCanvas){
   const _sel = selected; selected = [];   // 不畫選取高亮/控制點
@@ -852,6 +868,8 @@ function viewerHTML(){
   }).join('');
   return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>房屋家具配置</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>body{margin:0;background:#f1f5f9;font-family:"Noto Sans TC",system-ui,sans-serif}
 .wrap{max-width:1000px;margin:0 auto;padding:18px}h1{font-size:18px}h2{font-size:14px;color:#334155;margin:18px 0 6px}
 svg{width:100%;height:auto;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 4px 20px rgba(15,23,42,.06)}
@@ -962,6 +980,7 @@ function bindUI(){
   $('btnUndo').onclick = undo; $('btnRedo').onclick = redo;
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;
   $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan; $('btnLong').onclick = exportAllPNG;
+  $('btnTheme').onclick = toggleTheme;
 
   // 說明
   const help=$('helpOverlay');
@@ -1079,6 +1098,6 @@ async function init(){
   }
   if(!doc || !doc.tabs){ doc = doc && doc.area ? migrate(doc) : blankDoc(); }
   setActive(doc.active||0); fixIds(); fitView();
-  bindUI(); renderTabs(); renderCatalog(); syncInputs(); setMode('select');
+  initTheme(); bindUI(); renderTabs(); renderCatalog(); syncInputs(); setMode('select');
 }
 init();
