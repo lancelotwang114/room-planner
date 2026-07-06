@@ -91,6 +91,7 @@ function zoomBy(f, cx, cy){
 
 /* ---------- 復原 / 重做 / 存檔 ---------- */
 let undoStack = [], redoStack = [], saveTimer;
+let editPrev = null;   // 文字/標籤即時編輯：focus 時抓一次基準，blur(change) 才提交一筆 undo
 function snapshot(){ return JSON.stringify(doc); }
 function commit(prev){
   if(prev !== undefined && prev !== snapshot()){
@@ -706,7 +707,10 @@ function nudge(dx,dy){
 }
 
 /* ---------- 左側編輯面板 ---------- */
-function restoreCaret(id){ const el=$(id); if(el){ el.focus(); const v=el.value; el.setSelectionRange(v.length,v.length); } }
+// 即時編輯文字時只換畫布上那個 text 節點，不重繪整面板（避免輸入框重建→游標跳尾）
+function liveEditText(sel, str){ const el=svg.querySelector(sel); if(el) el.textContent=str; save(); }
+function beginEdit(){ if(editPrev===null) editPrev=snapshot(); }
+function endEdit(){ if(editPrev!==null){ commit(editPrev); editPrev=null; render(); } }
 function renderEditor(){
   const box = $('editor');
   if(!selected.length){ box.innerHTML = '<p class="hint">點選畫布上的家具／牆／文字來編輯。</p>'; return; }
@@ -728,7 +732,9 @@ function renderEditor(){
       <div class="selrow"><input type="text" id="edTxt" value="${esc(o.t)}" placeholder="輸入文字"></div>
       <div class="selrow"><label>字級 <input type="number" id="edSize" value="${o.size}" min="6" max="200" step="2"> cm</label></div>
       <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
-    $('edTxt').oninput  = e => { const p=snapshot(); o.t=e.target.value; commit(p); render(); restoreCaret('edTxt'); };
+    $('edTxt').onfocus  = beginEdit;
+    $('edTxt').oninput  = e => { o.t=e.target.value; liveEditText(`g.txt[data-id="${o.id}"] text`, o.t); };
+    $('edTxt').onchange = endEdit;
     $('edSize').onchange= e => { const p=snapshot(); o.size=Math.max(6,+e.target.value||12); commit(p); render(); };
     $('edDel').onclick  = deleteSel; return;
   }
@@ -744,7 +750,9 @@ function renderEditor(){
     <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
   $('edW').onchange  = e => { const p=snapshot(); o.w=Math.max(10,+e.target.value||10); commit(p); render(); };
   $('edD').onchange  = e => { const p=snapshot(); o.d=Math.max(10,+e.target.value||10); commit(p); render(); };
-  $('edLbl').oninput = e => { const p=snapshot(); o.label=e.target.value; commit(p); render(); restoreCaret('edLbl'); };
+  $('edLbl').onfocus = beginEdit;
+  $('edLbl').oninput = e => { o.label=e.target.value; liveEditText(`g.furn[data-id="${o.id}"] text`, o.label||o.type); };
+  $('edLbl').onchange = endEdit;
   $('edRot').onclick = rotateSel;
   if(isDoor(o)) $('edDoor').onclick = cycleDoor;
   box.querySelectorAll('.sw').forEach(b => b.onclick = () => setColor(b.dataset.c));
@@ -1039,7 +1047,7 @@ function bindUI(){
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } measure=null; clearSel(); render(); return; }
+    if(e.key==='Escape'){ const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } endEdit(); measure=null; clearSel(); render(); return; }
     if(typing) return;
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
