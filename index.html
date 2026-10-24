@@ -5,49 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#FFFFFF">
 <title>房屋家具配置工具</title>
+<script>
+  // 配色與深淺色存本機；載入前套用，避免閃色
+  (function(){
+    var d = document.documentElement, p = 'candy', t = null;
+    try { p = localStorage.getItem('roomplanner_palette') || 'candy'; t = localStorage.getItem('roomplanner_theme'); } catch(_){}
+    if(['candy','rose','tiffany','lemon'].indexOf(p) < 0) p = 'candy';
+    d.dataset.palette = p;
+    d.dataset.theme = t ? t : (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,300,0,0&display=block">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>房屋家具配置<span class="ver">v2</span><span class="savestate" id="saveState" aria-live="polite"></span></div>
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><span class="msr">floor_plan</span></span>
+    <span class="bname"><b>房屋配置</b><small class="savestate" id="saveState" aria-live="polite"></small></span>
+  </div>
   <div class="toolgroups">
-    <div class="group">
-      <button id="btnUndo" title="復原 (Ctrl+Z)" aria-label="復原"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>復原</span></button>
-      <button id="btnRedo" title="重做 (Ctrl+Y)" aria-label="重做"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>重做</span></button>
-    </div>
-    <div class="group">
-      <button id="btnExample" title="載入三房兩廳範例" aria-label="載入範例"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="9" height="7" rx="1"/><rect x="16" y="14" width="5" height="7" rx="1"/></svg><span>範例</span></button>
-      <button id="btnSave" class="primary" title="存成檔案（可再讀回續編）" aria-label="存檔"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>存檔</span></button>
-      <button id="btnCopy" title="複製平面圖，可貼到 LINE／Discord" aria-label="複製圖"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>複製圖</span></button>
-      <div class="more-wrap">
-        <button id="btnMore" aria-haspopup="true" aria-expanded="false" title="更多操作"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg><span>更多</span></button>
-        <div class="menu" id="moreMenu" role="menu" hidden>
-          <button id="btnLoad" role="menuitem" title="讀取 .html / .json 續編"><svg viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.82 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/></svg><span>讀取續編</span></button>
-          <button id="btnShare" role="menuitem" title="複製分享連結"><svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>分享連結</span></button>
-          <button id="btnLong" role="menuitem" title="下載含所有分頁的長圖"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="9" rx="1"/><rect x="5" y="13" width="14" height="9" rx="1"/></svg><span>全分頁長圖</span></button>
-          <button id="btnPrint" role="menuitem" title="列印 / 另存 PDF"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>列印 / PDF</span></button>
-          <div class="menu-sep"></div>
-          <button id="btnClear" class="danger" role="menuitem" title="清空目前分頁"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>清空目前分頁</span></button>
-        </div>
-        <input type="file" id="fileInput" accept=".html,.json" hidden>
+    <button id="btnUndo" class="ib" title="復原 (Ctrl+Z)" aria-label="復原"><span class="msr">undo</span></button>
+    <button id="btnRedo" class="ib" title="重做 (Ctrl+Y)" aria-label="重做"><span class="msr">redo</span></button>
+    <button id="btnCopy" class="ib" title="複製平面圖，可貼到 LINE／Discord" aria-label="複製圖"><span class="msr">image</span></button>
+    <div class="more-wrap split">
+      <button id="btnSave" class="primary" title="存成檔案（可再讀回續編）"><span class="msr">save</span><span class="lbl">存檔</span></button>
+      <button id="btnMore" class="primary caret" aria-haspopup="true" aria-expanded="false" title="更多操作" aria-label="更多操作"><span class="msr">expand_more</span></button>
+      <div class="menu" id="moreMenu" role="menu" hidden>
+        <button id="btnExample" role="menuitem" title="載入三房兩廳範例"><span class="msr">other_houses</span><span class="lbl">載入範例</span></button>
+        <button id="btnLoad" role="menuitem" title="讀取 .html / .json 續編"><span class="msr">folder_open</span><span class="lbl">讀取續編</span></button>
+        <button id="btnShare" role="menuitem" title="複製分享連結"><span class="msr">link</span><span class="lbl">分享連結</span></button>
+        <button id="btnLong" role="menuitem" title="下載含所有分頁的長圖"><span class="msr">view_agenda</span><span class="lbl">全分頁長圖</span></button>
+        <button id="btnPrint" role="menuitem" title="列印 / 另存 PDF"><span class="msr">print</span><span class="lbl">列印 / PDF</span></button>
+        <div class="menu-sep"></div>
+        <button id="btnClear" class="danger" role="menuitem" title="清空目前分頁"><span class="msr">delete</span><span class="lbl">清空目前分頁</span></button>
       </div>
+      <input type="file" id="fileInput" accept=".html,.json" hidden>
     </div>
-    <div class="group group-right">
-      <button id="btnSidebar" class="mobile-only" title="顯示／隱藏工具面板" aria-label="工具面板"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg><span>工具</span></button>
-      <button id="btnTheme" title="切換深／淺色" aria-label="切換深淺色"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg><span>深色</span></button>
-      <button id="btnHelp" title="使用說明 / 快捷鍵" aria-label="使用說明"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span>說明</span></button>
+    <button id="btnSidebar" class="ib mobile-only" title="顯示／隱藏面板" aria-label="面板"><span class="msr">view_sidebar</span></button>
+    <div class="more-wrap">
+      <button id="btnUser" class="avatar" aria-haspopup="true" aria-expanded="false" title="外觀與說明" aria-label="外觀與說明"><span class="msr">tune</span></button>
+      <div class="menu" id="userMenu" role="menu" hidden>
+        <p class="menu-title">外觀</p>
+        <button id="btnTheme" role="menuitem"><span class="msr">dark_mode</span><span class="lbl">深色模式</span></button>
+        <p class="menu-title">配色</p>
+        <div class="pal-row" role="group" aria-label="配色">
+          <button role="menuitemradio" data-pal="candy" title="糖果"><i class="dot"></i><span class="lbl">糖果</span></button>
+          <button role="menuitemradio" data-pal="rose" title="玫瑰"><i class="dot"></i><span class="lbl">玫瑰</span></button>
+          <button role="menuitemradio" data-pal="tiffany" title="蒂芬妮"><i class="dot"></i><span class="lbl">蒂芬妮</span></button>
+          <button role="menuitemradio" data-pal="lemon" title="檸檬"><i class="dot"></i><span class="lbl">檸檬</span></button>
+        </div>
+        <div class="menu-sep"></div>
+        <button id="btnHelp" role="menuitem" title="使用說明 / 快捷鍵"><span class="msr">help</span><span class="lbl">使用說明</span></button>
+      </div>
     </div>
   </div>
 </header>
 
 <div id="helpOverlay" class="overlay" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
-    <button class="modal-x" id="helpClose" aria-label="關閉">×</button>
+    <button class="modal-x" id="helpClose" aria-label="關閉"><span class="msr">close</span></button>
     <h2 id="helpTitle">使用說明</h2>
-    <h3>模式</h3>
+    <h3>模式（左側工具列）</h3>
     <ul>
       <li><b>選取</b>：拖家具移動；拖空白處框選多個；Shift 點擊加選。</li>
       <li><b>平移</b>：拖曳畫布；也可空白鍵／中鍵／雙指。</li>
@@ -57,7 +79,7 @@
     <h3>選取家具後</h3>
     <ul>
       <li>四角控制點拖曳改大小、上方圓點旋轉（吸附 15°，Shift 自由）。</li>
-      <li>自動顯示到周圍牆的間距；左側可輸入精確 cm、換色、加標籤。</li>
+      <li>自動顯示到周圍牆的間距；右側「選取」頁可輸入精確 cm、換色、加標籤。</li>
     </ul>
     <h3>快捷鍵</h3>
     <ul class="keys">
@@ -69,13 +91,14 @@
       <li><kbd>Delete</kbd> 刪除　<kbd>Esc</kbd> 取消</li>
       <li>滾輪／雙指 縮放</li>
     </ul>
-    <h3>其他</h3>
+    <h3>其他（右側「房屋」頁）</h3>
     <ul>
       <li><b>房間面積</b>：勾選後牆圍出的每間房自動標坪數。</li>
-      <li><b>空間健檢</b>：勾「標出太窄的走道」，圖上小於設定值的空隙會標紅並列在左側，點一下跳過去看。貼牆（距離 0）不算違規。</li>
+      <li><b>空間健檢</b>：勾「標出太窄的走道」，圖上小於設定值的空隙會標紅並列出，點一下跳過去看。貼牆（距離 0）不算違規。</li>
       <li><b>水電符號</b>：插座／開關／網路孔是電氣圖示意符號，畫面大小為好辨識，非實際器具尺寸，也不列入走道計算。</li>
       <li><b>底圖描圖</b>：上傳現成平面圖→校準比例→描牆擺家具。</li>
-      <li><b>分頁</b>：多方案並存對比；<b>分享</b>複製連結、<b>長圖</b>含所有分頁、<b>列印</b>可另存 PDF。</li>
+      <li><b>分頁</b>：多方案並存對比；存檔旁的選單有<b>分享</b>連結、<b>長圖</b>含所有分頁、<b>列印</b>可另存 PDF。</li>
+      <li><b>配色</b>：右上角圓鈕可切換深淺色與四組配色。</li>
     </ul>
   </div>
 </div>
@@ -83,95 +106,106 @@
 <nav class="tabbar" id="tabbar" aria-label="格局分頁"></nav>
 
 <main class="layout">
-  <aside class="sidebar">
-    <section class="panel">
-      <h2>房屋尺寸</h2>
-      <div class="row">
-        <label>寬 <input type="number" id="areaW" class="num" min="100" max="3000" step="10"> cm</label>
-        <label>深 <input type="number" id="areaH" class="num" min="100" max="3000" step="10"> cm</label>
-      </div>
-      <p class="pyeong num" id="pyeong">0 坪</p>
-      <div class="row">
-        <label>格線 <select id="gridSel">
-          <option value="5">5 cm</option>
-          <option value="10" selected>10 cm</option>
-          <option value="25">25 cm</option>
-          <option value="50">50 cm</option>
-        </select></label>
-        <label class="chk"><input type="checkbox" id="snapChk" checked> 吸附格線</label>
-      </div>
-      <label class="chk"><input type="checkbox" id="areaChk"> 顯示房間面積</label>
-      <label class="chk"><input type="checkbox" id="titleChk" checked> 顯示圖框標題</label>
-    </section>
-
-    <section class="panel">
-      <h2>空間健檢 <span class="sub">走道夠不夠寬</span></h2>
-      <label class="chk"><input type="checkbox" id="clearChk"> 標出太窄的走道</label>
-      <div class="row" style="margin-top:10px">
-        <label>最少 <input type="number" id="clearMin" class="num" min="30" max="300" step="5" value="70" style="width:70px"> cm</label>
-        <select id="clearPreset">
-          <option value="">自訂</option>
-          <option value="60">60・側身勉強過</option>
-          <option value="70" selected>70・一個人好走</option>
-          <option value="90">90・標準走道</option>
-          <option value="120">120・兩人並行</option>
-        </select>
-      </div>
-      <div id="healthOut"><p class="hint">勾選後檢查走道寬度與門前、馬桶前等常見淨空。</p></div>
-    </section>
-
-    <section class="panel" id="editorSection">
-      <h2>編輯選取</h2>
-      <div id="editor"><p class="hint">點選畫布上的家具／牆／文字來編輯。</p></div>
-    </section>
-
-    <section class="panel">
-      <h2>模式</h2>
-      <div class="modes">
-        <button id="modeSelect" class="mode active"><svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg><span>選取</span></button>
-        <button id="modePan" class="mode"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>移動畫面</span></button>
-        <button id="modeRoom" class="mode"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18"/></svg><span>畫房間</span></button>
-        <button id="modeWall" class="mode"><svg viewBox="0 0 24 24"><path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/></svg><span>畫牆</span></button>
-        <button id="modeMeasure" class="mode"><svg viewBox="0 0 24 24"><path d="M21 3 3 21"/><path d="M3 15v6h6"/><path d="M15 3h6v6"/></svg><span>量距離</span></button>
-      </div>
-      <button id="addText" class="toolwide"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg><span>加文字</span></button>
-      <p class="hint" id="modeHint">拖曳家具移動；拖空白處框選多個；Shift 點擊加選。</p>
-      <p class="hint">滾輪縮放；空白鍵或中鍵拖曳平移。</p>
-    </section>
-
-    <section class="panel">
-      <h2>家具目錄 <span class="sub">拖曳放入畫布</span></h2>
-      <div id="catalog"></div>
-    </section>
-
-    <section class="panel">
-      <h2>底圖描圖 <span class="sub">選用</span></h2>
-      <input type="file" id="bgInput" accept="image/*" hidden>
-      <button class="toolwide" id="bgUpload"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>上傳平面圖</span></button>
-      <div id="bgCtl" hidden style="margin-top:10px">
-        <label style="display:flex;gap:8px;align-items:center">透明度 <input type="range" id="bgOpacity" min="0.1" max="1" step="0.1" value="0.5" style="flex:1"></label>
-        <div class="row" style="margin-top:10px">
-          <button class="toolwide" id="bgCalib" style="flex:1"><svg viewBox="0 0 24 24"><path d="M21 3 3 21"/><path d="M3 15v6h6"/><path d="M15 3h6v6"/></svg><span>校準比例</span></button>
-          <button class="toolwide del" id="bgRemove" style="flex:0 0 auto;width:auto;border-color:var(--danger);color:var(--danger)">移除</button>
-        </div>
-      </div>
-      <p class="hint">上傳現成平面圖→校準比例→在上面描牆、擺家具。</p>
-    </section>
-  </aside>
+  <nav class="dock" aria-label="工具">
+    <button id="modeSelect" class="tool" aria-pressed="true"><span class="msr">arrow_selector_tool</span><span>選取</span></button>
+    <button id="modePan" class="tool" aria-pressed="false"><span class="msr">pan_tool</span><span>平移</span></button>
+    <hr>
+    <button id="modeRoom" class="tool" aria-pressed="false"><span class="msr">rectangle</span><span>房間</span></button>
+    <button id="modeWall" class="tool" aria-pressed="false"><span class="msr">draw</span><span>畫牆</span></button>
+    <button id="modeMeasure" class="tool" aria-pressed="false"><span class="msr">straighten</span><span>量測</span></button>
+    <hr>
+    <button id="addText" class="tool"><span class="msr">title</span><span>文字</span></button>
+  </nav>
 
   <div class="canvas-wrap">
     <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
-    <div id="emptyHint" class="empty-hint" hidden>從左側<b>拖家具</b>進來，或按上方 <b>範例</b> 開始</div>
+    <div id="emptyHint" class="empty-hint" hidden>從右側<b>家具</b>頁拖家具進來，或從 <b>存檔 ▾</b> 選單載入範例</div>
+    <p class="mode-hint" id="modeHint">拖曳家具移動；拖空白處框選多個；Shift 點擊加選。</p>
     <div class="zoom-ctl" role="group" aria-label="縮放">
-      <button id="zoomOut" aria-label="縮小"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button id="zoomOut" aria-label="縮小"><span class="msr">remove</span></button>
       <button id="zoomLabel" class="num" title="重設縮放">100%</button>
-      <button id="zoomIn" aria-label="放大"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
-      <button id="zoomFit" title="符合視窗" aria-label="符合視窗"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      <button id="zoomIn" aria-label="放大"><span class="msr">add</span></button>
+      <button id="zoomFit" title="符合視窗" aria-label="符合視窗"><span class="msr">fit_screen</span></button>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
+
+  <aside class="insp" aria-label="檢視面板">
+    <div class="itabs" role="tablist">
+      <button role="tab" data-insp="sel" aria-selected="false">選取</button>
+      <button role="tab" data-insp="furn" aria-selected="true">家具</button>
+      <button role="tab" data-insp="house" aria-selected="false">房屋</button>
+    </div>
+
+    <div class="ipane" data-pane="sel" hidden>
+      <section class="panel" id="editorSection">
+        <h2>編輯選取</h2>
+        <div id="editor"><p class="hint">點選畫布上的家具／牆／文字來編輯。</p></div>
+        <p class="hint">滾輪縮放；空白鍵或中鍵拖曳平移。</p>
+      </section>
+    </div>
+
+    <div class="ipane" data-pane="furn">
+      <section class="panel">
+        <h2>家具目錄 <span class="sub">拖曳放入畫布</span></h2>
+        <div id="catalog"></div>
+      </section>
+    </div>
+
+    <div class="ipane" data-pane="house" hidden>
+      <section class="panel">
+        <h2>房屋尺寸</h2>
+        <div class="row">
+          <label>寬 <input type="number" id="areaW" class="num" min="100" max="3000" step="10"> cm</label>
+          <label>深 <input type="number" id="areaH" class="num" min="100" max="3000" step="10"> cm</label>
+        </div>
+        <p class="pyeong num" id="pyeong">0 坪</p>
+        <div class="row">
+          <label>格線 <select id="gridSel">
+            <option value="5">5 cm</option>
+            <option value="10" selected>10 cm</option>
+            <option value="25">25 cm</option>
+            <option value="50">50 cm</option>
+          </select></label>
+          <label class="chk"><input type="checkbox" id="snapChk" checked> 吸附格線</label>
+        </div>
+        <label class="chk"><input type="checkbox" id="areaChk"> 顯示房間面積</label>
+        <label class="chk"><input type="checkbox" id="titleChk" checked> 顯示圖框標題</label>
+      </section>
+
+      <section class="panel card tint">
+        <h2>空間健檢 <span class="sub">走道夠不夠寬</span></h2>
+        <label class="chk"><input type="checkbox" id="clearChk"> 標出太窄的走道</label>
+        <div class="row gap-top">
+          <label>最少 <input type="number" id="clearMin" class="num" min="30" max="300" step="5" value="70"> cm</label>
+          <select id="clearPreset">
+            <option value="">自訂</option>
+            <option value="60">60・側身勉強過</option>
+            <option value="70" selected>70・一個人好走</option>
+            <option value="90">90・標準走道</option>
+            <option value="120">120・兩人並行</option>
+          </select>
+        </div>
+        <div id="healthOut"><p class="hint">勾選後檢查走道寬度與門前、馬桶前等常見淨空。</p></div>
+      </section>
+
+      <section class="panel">
+        <h2>底圖描圖 <span class="sub">選用</span></h2>
+        <input type="file" id="bgInput" accept="image/*" hidden>
+        <button class="toolwide" id="bgUpload"><span class="msr">upload</span><span>上傳平面圖</span></button>
+        <div id="bgCtl" class="gap-top" hidden>
+          <label class="range">透明度 <input type="range" id="bgOpacity" min="0.1" max="1" step="0.1" value="0.5"></label>
+          <div class="row gap-top">
+            <button class="toolwide grow" id="bgCalib"><span class="msr">straighten</span><span>校準比例</span></button>
+            <button class="toolwide del" id="bgRemove">移除</button>
+          </div>
+        </div>
+        <p class="hint">上傳現成平面圖→校準比例→在上面描牆、擺家具。</p>
+      </section>
+    </div>
+  </aside>
 </main>
 
-<script src="app.js?v=28" defer></script>
+<script src="app.js?v=30" defer></script>
 </body>
 </html>

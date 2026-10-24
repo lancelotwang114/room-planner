@@ -214,7 +214,7 @@ function wallSvg(wl){
   }
   return `<g class="wall" data-id="${wl.id}">
     <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="transparent" stroke-width="${d.t*2.4}" stroke-linecap="round"/>
-    <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${sel?'#2563eb':'#334155'}" stroke-width="${d.t}" stroke-linecap="round"/>
+    <line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${sel?'var(--canvas-accent)':'#334155'}" stroke-width="${d.t}" stroke-linecap="round"/>
     ${h}</g>`;
 }
 function doorSvg(f){
@@ -232,7 +232,7 @@ function handlesSvg(f){          // 單選家具：四角 + 旋轉
   const cx = f.x+f.w/2;
   const corner = (cn,px,py) => `<rect class="handle" data-id="${f.id}" data-cn="${cn}" x="${px-hs}" y="${py-hs}" width="${hs*2}" height="${hs*2}"/>`;
   return corner('tl',f.x,f.y) + corner('tr',f.x+f.w,f.y) + corner('br',f.x+f.w,f.y+f.d) + corner('bl',f.x,f.y+f.d)
-    + `<line x1="${cx}" y1="${f.y}" x2="${cx}" y2="${f.y-ro}" stroke="#2563eb" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`
+    + `<line x1="${cx}" y1="${f.y}" x2="${cx}" y2="${f.y-ro}" stroke="var(--canvas-accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`
     + `<circle class="handle rot" data-id="${f.id}" data-rot="1" cx="${cx}" cy="${f.y-ro}" r="${hs}"/>`;
 }
 /* 家具線稿 glyph：在 footprint(x,y,w,d) 內畫外形細節（描邊，不含底色 rect） */
@@ -311,7 +311,7 @@ function furnSvg(f){
   else {
     const glyph = GLYPH[f.type];
     const rect = `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" rx="3" fill="${f.color||typeColor(f.type)}"
-      stroke="${sel?'#2563eb':'#475569'}" stroke-width="${sel?2.5:1}" vector-effect="non-scaling-stroke"/>`;
+      stroke="${sel?'var(--canvas-accent)':'#475569'}" stroke-width="${sel?2.5:1}" vector-effect="non-scaling-stroke"/>`;
     if(glyph){
       const art = `<g stroke="#42566b" stroke-width="1.4" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round">${glyph(f.x,f.y,f.w,f.d)}</g>`;
       const fs = Math.max(7, Math.min(11, Math.min(f.w,f.d)/6));
@@ -323,13 +323,13 @@ function furnSvg(f){
     }
   }
   const sh = (single() && single().kind==='furniture' && single().o.id===f.id) ? handlesSvg(f) : '';
-  const dsel = ((isDoor(f)||isFixture(f)) && sel) ? `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` : '';
+  const dsel = ((isDoor(f)||isFixture(f)) && sel) ? `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="none" stroke="var(--canvas-accent)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` : '';
   return `<g class="furn" data-id="${f.id}" transform="rotate(${f.rot} ${cx} ${cy})">${body}${dsel}${sh}</g>`;
 }
 function textSvg(t){
   const sel = isSel('text', t.id);
   return `<g class="txt" data-id="${t.id}">
-    <text x="${t.x}" y="${t.y}" font-size="${t.size}" fill="${sel?'#2563eb':'#0f172a'}" font-weight="500"
+    <text x="${t.x}" y="${t.y}" font-size="${t.size}" fill="${sel?'var(--canvas-accent)':'#0f172a'}" font-weight="500"
       paint-order="stroke" stroke="#fff" stroke-width="3">${esc(t.t)}</text></g>`;
 }
 /* ---------- ① 房間面積：格點 flood-fill ---------- */
@@ -632,7 +632,7 @@ function bindShapes(){
       const s = {kind, id:g.dataset.id};
       if(e.shiftKey){ toggleSel(s); render(); return; }
       if(!isSel(kind, s.id)) setSel([s]);
-      render();
+      showInsp('sel'); render();
       if(selected.length===1 && kind!=='wall'){ const el=svg.querySelector(`g[data-id="${s.id}"]`); startSingleDrag(e, findObj(s), kind, el); }
       else startGroupDrag(e);
     });
@@ -844,7 +844,7 @@ function startWallDraw(e){
   e.preventDefault();
   const a = {x:snap(toSvg(e).x), y:snap(toSvg(e).y)};
   const NS='http://www.w3.org/2000/svg'; const line = document.createElementNS(NS,'line');
-  Object.entries({x1:a.x,y1:a.y,x2:a.x,y2:a.y,stroke:'#2563eb','stroke-width':WALL_THICK,'stroke-linecap':'round','stroke-dasharray':'14 8',opacity:'0.7'}).forEach(([k,v])=>line.setAttribute(k,v));
+  Object.entries({x1:a.x,y1:a.y,x2:a.x,y2:a.y,stroke:'var(--canvas-accent)','stroke-width':WALL_THICK,'stroke-linecap':'round','stroke-dasharray':'14 8',opacity:'0.7'}).forEach(([k,v])=>line.setAttribute(k,v));
   svg.appendChild(line);
   function mv(ev){ const b={x:snap(toSvg(ev).x),y:snap(toSvg(ev).y)}; line.setAttribute('x2',b.x); line.setAttribute('y2',b.y); }
   function up(ev){
@@ -859,7 +859,7 @@ function startRoomDraw(e){
   e.preventDefault();
   const a = {x:snap(toSvg(e).x), y:snap(toSvg(e).y)};
   const rect = document.createElementNS(NS,'rect');
-  Object.entries({fill:'rgba(37,99,235,.06)',stroke:'#2563eb','stroke-width':WALL_THICK,'stroke-linejoin':'round','stroke-dasharray':'14 8',opacity:'0.75'}).forEach(([k,v])=>rect.setAttribute(k,v));
+  Object.entries({fill:'var(--canvas-accent)','fill-opacity':'.06',stroke:'var(--canvas-accent)','stroke-width':WALL_THICK,'stroke-linejoin':'round','stroke-dasharray':'14 8',opacity:'0.75'}).forEach(([k,v])=>rect.setAttribute(k,v));
   svg.appendChild(rect);
   const box = b => ({x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(b.x-a.x), h:Math.abs(b.y-a.y)});
   function mv(ev){ const bx = box({x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)});
@@ -997,7 +997,7 @@ function renderCatalog(){
     <div class="cat-items">${g.items.map(([n,w,d]) =>
       `<div class="furn-chip" data-type="${n}" tabindex="0" role="button" aria-label="加入 ${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
     + custom
-    + `<button class="toolwide" id="addCustom" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>自訂家具</span></button>`;
+    + `<button class="toolwide" id="addCustom"><span class="msr">add</span><span>自訂家具</span></button>`;
   box.querySelectorAll('.furn-chip').forEach(chip => {
     chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip));
     chip.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); addFurniture(chip.dataset.type, state.area.w/2, state.area.h/2); showToast('已加入 '+chip.dataset.type); } });
@@ -1037,11 +1037,11 @@ function startPaletteDrag(e, chip){
 /* ---------- 分頁 ---------- */
 function renderTabs(){
   const bar = $('tabbar');
-  const xIcon = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>';
+  const xIcon = '<span class="msr">close</span>';
   bar.innerHTML = doc.tabs.map((L,i) =>
     `<div class="tab ${i===doc.active?'active':''}" data-i="${i}"><span class="tabname" tabindex="0" role="tab" aria-selected="${i===doc.active}" title="雙擊可重新命名">${esc(L.name)}</span>${doc.tabs.length>1?`<button class="tabx" data-del="${i}" title="刪除分頁" aria-label="刪除分頁">${xIcon}</button>`:''}</div>`).join('')
-    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>`
-    + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>複製</button>`;
+    + `<button class="tabbtn" id="tabAdd" title="新增空白分頁" aria-label="新增分頁"><span class="msr">add</span></button>`
+    + `<button class="tabbtn" id="tabDup" title="複製目前分頁"><span class="msr">content_copy</span>複製</button>`;
   bar.querySelectorAll('.tab').forEach(t => {
     t.querySelector('.tabname').addEventListener('click', () => switchTab(+t.dataset.i));
     t.querySelector('.tabname').addEventListener('dblclick', () => renameTab(+t.dataset.i));
@@ -1066,7 +1066,7 @@ function delTab(i){ if(doc.tabs.length<=1) return; if(!confirm(`刪除分頁「$
 /* ---------- 模式 ---------- */
 function setMode(m){
   mode = m;
-  ['Select','Pan','Room','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.classList.toggle('active', mode===x.toLowerCase()); });
+  ['Select','Pan','Room','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.setAttribute('aria-pressed', String(mode===x.toLowerCase())); });
   $('modeHint').textContent = m==='room' ? '拖一個方框，一次生成四面外牆。'
     : m==='wall' ? '按住拖曳畫一道牆，端點吸附格線。'
     : m==='pan' ? '拖曳畫布平移；滾輪縮放。'
@@ -1080,8 +1080,12 @@ function setMode(m){
 const THEME_LS = 'roomplanner_theme';
 function applyTheme(dark){
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  const b = $('btnTheme'); if(b){ const s = b.querySelector('span'); if(s) s.textContent = dark ? '淺色' : '深色'; }
-  const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = dark ? '#1B2530' : '#FFFFFF';
+  const b = $('btnTheme'); if(b){ b.querySelector('.msr').textContent = dark ? 'light_mode' : 'dark_mode'; b.querySelector('.lbl').textContent = dark ? '淺色模式' : '深色模式'; }
+  syncThemeColor();
+}
+function syncThemeColor(){
+  const m = document.querySelector('meta[name=theme-color]');
+  if(m) m.content = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#FFFFFF';
 }
 function initTheme(){
   const saved = localStorage.getItem(THEME_LS);
@@ -1091,6 +1095,18 @@ function initTheme(){
 function toggleTheme(){
   const dark = document.documentElement.dataset.theme !== 'dark';
   applyTheme(dark); localStorage.setItem(THEME_LS, dark ? 'dark' : 'light');
+}
+/* 配色（candy／rose／tiffany／lemon），值與收工共用；head 內已先套用避免閃色 */
+const PALETTE_LS = 'roomplanner_palette';
+function applyPalette(p){
+  document.documentElement.dataset.palette = p;
+  document.querySelectorAll('[data-pal]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.pal===p)));
+  syncThemeColor();
+}
+/* 右側檢視面板分頁：sel／furn／house */
+function showInsp(k){
+  document.querySelectorAll('.itabs [data-insp]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.insp===k)));
+  document.querySelectorAll('.ipane').forEach(p => p.hidden = p.dataset.pane!==k);
 }
 
 /* ---------- 存檔 / 讀取 / 輸出 ---------- */
@@ -1237,13 +1253,17 @@ function bindUI(){
   $('btnShare').onclick = shareLink; $('btnPrint').onclick = printPlan; $('btnLong').onclick = exportAllPNG;
   $('btnTheme').onclick = toggleTheme;
   $('btnSidebar').onclick = () => document.body.classList.toggle('sidebar-hidden');
+  document.querySelectorAll('[data-pal]').forEach(b => b.onclick = () => { applyPalette(b.dataset.pal); try{ localStorage.setItem(PALETTE_LS, b.dataset.pal); }catch(_){} });
+  document.querySelectorAll('.itabs [data-insp]').forEach(b => b.onclick = () => showInsp(b.dataset.insp));
 
-  // 更多下拉
-  const moreMenu = $('moreMenu'), btnMore = $('btnMore');
-  const closeMore = () => { if(moreMenu.hidden) return; moreMenu.hidden = true; btnMore.setAttribute('aria-expanded','false'); };
-  btnMore.onclick = e => { e.stopPropagation(); const willOpen = moreMenu.hidden; moreMenu.hidden = !willOpen; btnMore.setAttribute('aria-expanded', String(willOpen)); };
-  moreMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', closeMore));
-  document.addEventListener('click', e => { if(!moreMenu.hidden && !btnMore.parentElement.contains(e.target)) closeMore(); });
+  // 下拉選單（存檔▾、外觀）
+  [['btnMore','moreMenu'],['btnUser','userMenu']].forEach(([bid, mid]) => {
+    const btn = $(bid), menu = $(mid);
+    const close = () => { if(menu.hidden) return; menu.hidden = true; btn.setAttribute('aria-expanded','false'); };
+    btn.onclick = e => { e.stopPropagation(); const willOpen = menu.hidden; menu.hidden = !willOpen; btn.setAttribute('aria-expanded', String(willOpen)); };
+    menu.querySelectorAll('button:not([data-pal]):not(#btnTheme)').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('click', e => { if(!menu.hidden && !btn.parentElement.contains(e.target)) close(); });
+  });
 
   // 說明
   const help=$('helpOverlay');
@@ -1364,6 +1384,6 @@ async function init(){
   }
   if(!doc || !doc.tabs){ doc = doc && doc.area ? migrate(doc) : blankDoc(); }
   setActive(doc.active||0); fixIds(); fitView();
-  initTheme(); bindUI(); renderTabs(); renderCatalog(); syncInputs(); setMode('select');
+  initTheme(); applyPalette(document.documentElement.dataset.palette || 'candy'); bindUI(); renderTabs(); renderCatalog(); syncInputs(); setMode('select');
 }
 init();
