@@ -9,11 +9,19 @@ const CATALOG = [
   {cat:'餐廚', color:'#fed7aa', items:[['餐桌',120,80],['冰箱',70,70],['流理台',180,60]]},
   {cat:'收納', color:'#fde68a', items:[['衣櫃',120,60],['書桌',120,60]]},
   {cat:'衛浴', color:'#a5f3fc', items:[['馬桶',40,60],['浴缸',160,75]]},
-  {cat:'開口', color:'#e5e7eb', items:[['門',90,10],['窗',120,10]]},
+  {cat:'開口', color:'#e5e7eb', items:[['門',90,10],['滑門',150,10],['窗',120,10],['落地窗',200,10]]},
+  {cat:'結構', color:'#cbd5e1', items:[['柱子',30,30]]},
+  {cat:'水電', color:'#e9d5ff', items:[['插座',15,8],['專用插座',15,8],['開關',15,8],['網路孔',15,8]]},
 ];
 const TYPE = {};   // 內建 type -> {w,d,color}
 CATALOG.forEach(g => g.items.forEach(([n,w,d]) => TYPE[n] = {w,d,color:g.color}));
 const CUSTOM_COLOR = '#ddd6fe';
+/* 水電符號：電氣平面圖示意符號，畫符號不畫色塊；尺寸為圖面可讀性，非實際器具大小 */
+const FIXTURES = new Set(['插座','專用插座','開關','網路孔']);
+const FIX_SOLID = new Set(['專用插座','網路孔']);   // 實心符號，與一般插座區分
+function isFixture(f){ return FIXTURES.has(f.type); }
+/* 走道檢查：開口與水電符號不當障礙物，也不被檢查（否則門前、插座旁永遠紅） */
+const CLEAR_SKIP = new Set(['門','滑門','窗','落地窗','插座','專用插座','開關','網路孔']);
 const PYEONG_CM2 = 33058;          // 1 坪 ≈ 3.3058 m² = 33058 cm²
 const WALL_THICK = 10;             // 後備牆厚（實際 = 格線值，填滿一格）
 function marginCm(){ return Math.max(60, state.grid + 20); }   // 畫布外留白，容納外牆外推
@@ -27,6 +35,8 @@ let showAreas = false;             // 顯示房間面積（不存檔）
 let showTitleBlock = true;         // 顯示圖框標題欄（不存檔，匯出時帶上）
 let roomsCache = {key:null, rooms:[]};
 let measure = null;                // 量測線 {x1,y1,x2,y2}（暫態，不存檔）
+let clearance = {on:false, min:70};// 走道檢查（不存進格局，只記在 localStorage）
+let gapsCache = {key:null, gaps:[]};
 let clip = null;                   // 複製暫存
 let pinching = false;              // 雙指縮放中
 const NS = 'http://www.w3.org/2000/svg';
@@ -129,10 +139,20 @@ function applyDoc(o, refit){
 function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); applyDoc(JSON.parse(undoStack.pop())); }
 function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); applyDoc(JSON.parse(redoStack.pop())); }
 let saveFailed = false;
+function setSaveState(t){ const el = $('saveState'); if(el) el.textContent = t; }
 function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{
-  try{ localStorage.setItem(LS, snapshot()); saveFailed=false; }
-  catch(e){ if(!saveFailed){ saveFailed=true; showToast('自動儲存失敗（空間不足，底圖可能過大）→ 請用「存檔」'); } }
+  try{ localStorage.setItem(LS, snapshot()); saveFailed=false;
+       setSaveState('已自動儲存 ' + new Date().toTimeString().slice(0,5)); }
+  catch(e){ setSaveState('自動儲存失敗');
+    if(!saveFailed){ saveFailed=true; showToast('自動儲存失敗（空間不足，底圖可能過大）→ 請用「存檔」'); } }
 }, 400); }
+/* 走道門檻是使用者偏好，不進格局檔（存檔／分享連結不受影響） */
+const CLEAR_LS = 'roomplanner_clearance';
+function loadClearance(){
+  try{ const o = JSON.parse(localStorage.getItem(CLEAR_LS) || 'null');
+       if(o){ clearance.on = !!o.on; clearance.min = Math.max(30, Math.min(300, +o.min || 70)); } }catch(e){}
+}
+function saveClearance(){ try{ localStorage.setItem(CLEAR_LS, JSON.stringify({on:clearance.on, min:clearance.min})); }catch(e){} }
 
 /* ---------- 選取模型（多選） ---------- */
 function findObj(s){
@@ -175,12 +195,13 @@ function wallLabelSvg(wl){
   return `<text class="dim" x="${tx}" y="${ty}" font-size="13" text-anchor="middle" fill="#15324A" paint-order="stroke" stroke="#fff" stroke-width="3.5" pointer-events="none">${len}</text>`;
 }
 // 牆填滿一格：厚度=格線。內牆往 +側填（兩面落格線）；外牆往外填（不吃室內）。
-function wallDisp(wl){
-  let {x1,y1,x2,y2} = wl; const t = state.grid, A = state.area, h = t/2;
+function wallBox(wl, t, A){         // 純函式版，走道檢查用得到
+  let {x1,y1,x2,y2} = wl; const h = t/2;
   if(x1===x2){ const cx = x1<=0 ? x1-h : x1>=A.w ? x1+h : x1+h; x1=x2=cx; }
   else if(y1===y2){ const cy = y1<=0 ? y1-h : y1>=A.h ? y1+h : y1+h; y1=y2=cy; }
   return {x1,y1,x2,y2,t};
 }
+function wallDisp(wl){ return wallBox(wl, state.grid, state.area); }
 function wallSvg(wl){
   const sel = isSel('wall', wl.id);
   const d = wallDisp(wl);
@@ -238,18 +259,55 @@ const counter = (x,y,w,d) => `<circle cx="${x+w*0.3}" cy="${y+d/2}" r="${Math.mi
 const cabinet = (x,y,w,d) => {let s='';const n=Math.max(2,Math.round(w/60));for(let i=1;i<n;i++){const cx=x+w*i/n;s+=`<line x1="${cx}" y1="${y+d*0.15}" x2="${cx}" y2="${y+d*0.85}"/>`;}return s;};
 const shelf = (x,y,w,d) => {let s='';const n=Math.max(2,Math.round(d/30));for(let i=1;i<n;i++){const cy=y+d*i/n;s+=`<line x1="${x+w*0.1}" y1="${cy}" x2="${x+w*0.9}" y2="${cy}"/>`;}return s;};
 const win = (x,y,w,d) => `<line x1="${x}" y1="${y+d/2}" x2="${x+w}" y2="${y+d/2}"/>`;
+const winTall = (x,y,w,d) => `<line x1="${x}" y1="${y+d*0.32}" x2="${x+w}" y2="${y+d*0.32}"/><line x1="${x}" y1="${y+d*0.68}" x2="${x+w}" y2="${y+d*0.68}"/>`;
+// 滑門：兩片錯開的門扇 + 滑動方向箭頭
+const slide = (x,y,w,d) => {
+  const my=y+d/2, a=(px,dir)=>`<path d="M ${px} ${my} l ${-6*dir} ${-d*0.28} M ${px} ${my} l ${-6*dir} ${d*0.28}"/>`;
+  return `<line x1="${x+w/2}" y1="${y}" x2="${x+w/2}" y2="${y+d}"/>`
+    + `<line x1="${x+w*0.12}" y1="${my}" x2="${x+w*0.44}" y2="${my}"/>` + a(x+w*0.12,-1)
+    + `<line x1="${x+w*0.56}" y1="${my}" x2="${x+w*0.88}" y2="${my}"/>` + a(x+w*0.88,1);
+};
+const column = (x,y,w,d) => `<line x1="${x}" y1="${y}" x2="${x+w}" y2="${y+d}"/><line x1="${x+w}" y1="${y}" x2="${x}" y2="${y+d}"/>`;
 const GLYPH = {
   '單人床':(x,y,w,d)=>bed(x,y,w,d,false), '雙人床':(x,y,w,d)=>bed(x,y,w,d,true),
   '沙發':sofa, '茶几':table, '電視櫃':cabinet,
   '餐桌':table, '冰箱':fridge, '流理台':counter,
   '衣櫃':wardrobe, '書桌':table, '書櫃':shelf,
-  '馬桶':toilet, '浴缸':bath, '窗':win,
+  '馬桶':toilet, '浴缸':bath, '窗':win, '落地窗':winTall, '滑門':slide, '柱子':column,
 };
+/* 水電符號：底邊＝牆線，符號往室內側畫。旋轉沿用家具的 rot。 */
+const socket = (x,y,w,d) => {
+  const cx=x+w/2, by=y+d*0.18, r=Math.min(w*0.42, d*0.72);
+  return `<line x1="${x}" y1="${by}" x2="${x+w}" y2="${by}"/>`
+    + `<path d="M ${cx-r} ${by} A ${r} ${r} 0 0 0 ${cx+r} ${by}"/>`
+    + `<line x1="${cx-r*0.42}" y1="${by}" x2="${cx-r*0.42}" y2="${by+r*0.62}"/>`
+    + `<line x1="${cx+r*0.42}" y1="${by}" x2="${cx+r*0.42}" y2="${by+r*0.62}"/>`;
+};
+const switchGlyph = (x,y,w,d) => {
+  const cx=x+w/2, by=y+d*0.18, r=Math.min(w*0.16, d*0.26);
+  return `<line x1="${x}" y1="${by}" x2="${x+w}" y2="${by}"/>`
+    + `<circle cx="${cx}" cy="${by+r*1.6}" r="${r}"/>`
+    + `<line x1="${cx+r*0.7}" y1="${by+r*1.1}" x2="${cx+r*3}" y2="${by+r*0.2}"/>`;
+};
+const dataJack = (x,y,w,d) => {
+  const cx=x+w/2, by=y+d*0.18, h=d*0.6, hw=Math.min(w*0.3, h*0.75);
+  return `<line x1="${x}" y1="${by}" x2="${x+w}" y2="${by}"/>`
+    + `<path d="M ${cx-hw} ${by} L ${cx+hw} ${by} L ${cx} ${by+h} Z"/>`;
+};
+const FIXGLYPH = {'插座':socket, '專用插座':socket, '開關':switchGlyph, '網路孔':dataJack};
+function fixtureSvg(f){
+  const fs = Math.max(4, f.d*0.62), cx = f.x+f.w/2;
+  const g = FIXGLYPH[f.type] || socket;
+  return `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="transparent"/>`
+    + `<g stroke="#7C3AED" stroke-width="1.3" fill="${FIX_SOLID.has(f.type)?'#7C3AED':'none'}" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round">${g(f.x,f.y,f.w,f.d)}</g>`
+    + `<text x="${cx}" y="${f.y+f.d+fs}" font-size="${fs}" text-anchor="middle" fill="#7C3AED">${esc(f.label||f.type)}</text>`;
+}
 function furnSvg(f){
   const cx=f.x+f.w/2, cy=f.y+f.d/2;
   const sel = isSel('furniture', f.id);
   let body;
   if(isDoor(f)){ body = doorSvg(f); }
+  else if(isFixture(f)){ body = fixtureSvg(f); }
   else {
     const glyph = GLYPH[f.type];
     const rect = `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" rx="3" fill="${f.color||typeColor(f.type)}"
@@ -265,7 +323,7 @@ function furnSvg(f){
     }
   }
   const sh = (single() && single().kind==='furniture' && single().o.id===f.id) ? handlesSvg(f) : '';
-  const dsel = (isDoor(f) && sel) ? `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` : '';
+  const dsel = ((isDoor(f)||isFixture(f)) && sel) ? `<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` : '';
   return `<g class="furn" data-id="${f.id}" transform="rotate(${f.rot} ${cx} ${cy})">${body}${dsel}${sh}</g>`;
 }
 function textSvg(t){
@@ -368,24 +426,144 @@ function measureSvg(){
     + `<circle cx="${measure.x1}" cy="${measure.y1}" r="${H_CM*0.7}" fill="#0E7FB8"/><circle cx="${measure.x2}" cy="${measure.y2}" r="${H_CM*0.7}" fill="#0E7FB8"/>`
     + `<text class="dim" x="${mx}" y="${my-6}" font-size="15" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="600">${len} cm</text></g>`;
 }
-function gapDimsSvg(f){
-  if(f.rot%90!==0) return '';
-  const horiz=f.rot%180===0, fw=horiz?f.w:f.d, fh=horiz?f.d:f.w;
-  const L=f.x+(f.w-fw)/2, R=L+fw, T=f.y+(f.d-fh)/2, B=T+fh, midX=(L+R)/2, midY=(T+B)/2;
-  const vx=[0,state.area.w], hy=[0,state.area.h];
-  state.walls.forEach(w=>{const d=wallDisp(w);
-    if(d.x1===d.x2){ const y1=Math.min(d.y1,d.y2),y2=Math.max(d.y1,d.y2); if(B>y1&&T<y2){ vx.push(d.x1-d.t/2,d.x1+d.t/2); } }
-    else if(d.y1===d.y2){ const x1=Math.min(d.x1,d.x2),x2=Math.max(d.x1,d.x2); if(R>x1&&L<x2){ hy.push(d.y1-d.t/2,d.y1+d.t/2); } }
+/* 每件家具四面到最近障礙物（房界／牆／其他家具）的淨距。純函式，selftest.html 直接餵資料驗。
+   ponytail: 這是「兩物之間的淨距」，不是動線連通分析——床頭與牆之間的死角凹槽也會被算進來。
+   要真動線得拿 computeRooms() 那套 blocked grid 做距離轉換，目前不做。 */
+function furnBox(f){                 // 旋轉後的視覺外框（rot 為 90 倍數時精確）
+  const horiz = f.rot%180===0, fw = horiz?f.w:f.d, fh = horiz?f.d:f.w;
+  const L = f.x+(f.w-fw)/2, T = f.y+(f.d-fh)/2;
+  return {L, R:L+fw, T, B:T+fh};
+}
+function clearanceGaps(furniture, walls, area, grid){
+  const boxes = furniture.filter(f => !CLEAR_SKIP.has(f.type) && f.rot%90===0)
+    .map(f => Object.assign({id:f.id, type:f.type}, furnBox(f)));
+  const BIG = 1e9;
+  const vs = [{x:0,y0:-BIG,y1:BIG,id:'edge:L'}, {x:area.w,y0:-BIG,y1:BIG,id:'edge:R'}];   // 垂直障礙面
+  const hs = [{y:0,x0:-BIG,x1:BIG,id:'edge:T'}, {y:area.h,x0:-BIG,x1:BIG,id:'edge:B'}];   // 水平障礙面
+  walls.forEach(wl => {
+    const d = wallBox(wl, grid, area), h = d.t/2, wid = 'w:'+wl.id;
+    if(d.x1===d.x2){ const y0=Math.min(d.y1,d.y2), y1=Math.max(d.y1,d.y2);
+      vs.push({x:d.x1-h,y0,y1,id:wid}, {x:d.x1+h,y0,y1,id:wid}); }
+    else if(d.y1===d.y2){ const x0=Math.min(d.x1,d.x2), x1=Math.max(d.x1,d.x2);
+      hs.push({y:d.y1-h,x0,x1,id:wid}, {y:d.y1+h,x0,x1,id:wid}); }
   });
-  const dim=(x1,y1,x2,y2,val)=>{ const mx=(x1+x2)/2,my=(y1+y2)/2;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0E7FB8" stroke-width="1" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`
-      + `<text class="dim" x="${mx}" y="${my-3}" font-size="11" text-anchor="middle" fill="#0E7FB8" paint-order="stroke" stroke="#fff" stroke-width="3">${Math.round(val)}</text>`; };
-  let s='';
-  const lf=Math.max(...vx.filter(x=>x<=L+0.5)); if(isFinite(lf)&&L-lf>1) s+=dim(lf,midY,L,midY,L-lf);
-  const rf=Math.min(...vx.filter(x=>x>=R-0.5)); if(isFinite(rf)&&rf-R>1) s+=dim(R,midY,rf,midY,rf-R);
-  const tf=Math.max(...hy.filter(y=>y<=T+0.5)); if(isFinite(tf)&&T-tf>1) s+=dim(midX,tf,midX,T,T-tf);
-  const bf=Math.min(...hy.filter(y=>y>=B-0.5)); if(isFinite(bf)&&bf-B>1) s+=dim(midX,B,midX,bf,bf-B);
-  return s ? `<g pointer-events="none">${s}</g>` : '';
+  boxes.forEach(b => { const id='f:'+b.id;
+    vs.push({x:b.L,y0:b.T,y1:b.B,id}, {x:b.R,y0:b.T,y1:b.B,id});
+    hs.push({y:b.T,x0:b.L,x1:b.R,id}, {y:b.B,x0:b.L,x1:b.R,id});
+  });
+  const out = [];
+  boxes.forEach(b => {
+    const me = 'f:'+b.id, midX=(b.L+b.R)/2, midY=(b.T+b.B)/2;
+    const vc = vs.filter(s => s.id!==me && s.y1>b.T+0.5 && s.y0<b.B-0.5);
+    const hc = hs.filter(s => s.id!==me && s.x1>b.L+0.5 && s.x0<b.R-0.5);
+    const push = (side,other,gap,x1,y1,x2,y2) => out.push({owner:b.id, type:b.type, side, other, gap, x1,y1,x2,y2,
+      pair:[me,other].sort().join('|')+'|'+(side==='L'||side==='R'?'x':'y')});
+    let best=null;
+    vc.forEach(s => { if(s.x<=b.L+0.5 && (!best || s.x>best.x)) best=s; });
+    if(best) push('L', best.id, b.L-best.x, best.x, midY, b.L, midY);
+    best=null; vc.forEach(s => { if(s.x>=b.R-0.5 && (!best || s.x<best.x)) best=s; });
+    if(best) push('R', best.id, best.x-b.R, b.R, midY, best.x, midY);
+    best=null; hc.forEach(s => { if(s.y<=b.T+0.5 && (!best || s.y>best.y)) best=s; });
+    if(best) push('T', best.id, b.T-best.y, midX, best.y, midX, b.T);
+    best=null; hc.forEach(s => { if(s.y>=b.B-0.5 && (!best || s.y<best.y)) best=s; });
+    if(best) push('B', best.id, best.y-b.B, midX, b.B, midX, best.y);
+  });
+  return out;
+}
+/* 違規＝ 1cm ≤ 淨距 < 門檻。淨距 0（貼牆／併排）是刻意配置，不報。
+   同一道縫兩邊各報一次 → 用 pair 去重。 */
+function checkClearance(furniture, walls, area, grid, minCm){
+  const seen = new Set();
+  return clearanceGaps(furniture, walls, area, grid)
+    .filter(g => g.gap >= 1 && g.gap < minCm)
+    .filter(g => seen.has(g.pair) ? false : (seen.add(g.pair), true));
+}
+function gapsNow(){                 // 同一份格局只算一次（同 computeRooms 的快取寫法）
+  const key = JSON.stringify({f:state.furniture, w:state.walls, a:state.area, g:state.grid});
+  if(gapsCache.key === key) return gapsCache.gaps;
+  gapsCache = {key, gaps:clearanceGaps(state.furniture, state.walls, state.area, state.grid)};
+  return gapsCache.gaps;
+}
+function gapDimSvg(g){
+  const bad = g.gap < clearance.min, col = bad ? '#C2553F' : '#0E7FB8';
+  const mx=(g.x1+g.x2)/2, my=(g.y1+g.y2)/2;
+  return `<line x1="${g.x1}" y1="${g.y1}" x2="${g.x2}" y2="${g.y2}" stroke="${col}" stroke-width="${bad?1.6:1}" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`
+    + `<text class="dim" x="${mx}" y="${my-3}" font-size="11" text-anchor="middle" fill="${col}" paint-order="stroke" stroke="#fff" stroke-width="3"${bad?' font-weight="700"':''}>${Math.round(g.gap)}${bad?' !':''}</text>`;
+}
+function gapDimsSvg(f){             // 選取單一家具時顯示四周間距
+  if(f.rot%90!==0 || CLEAR_SKIP.has(f.type)) return '';
+  const gs = gapsNow().filter(g => g.owner===f.id && g.gap>1);
+  return gs.length ? `<g pointer-events="none">${gs.map(gapDimSvg).join('')}</g>` : '';
+}
+function clearanceSvg(){            // 走道檢查開啟時，全圖標出過窄處
+  if(!clearance.on) return '';
+  const v = checkClearance(state.furniture, state.walls, state.area, state.grid, clearance.min);
+  return v.length ? `<g pointer-events="none">${v.map(gapDimSvg).join('')}</g>` : '';
+}
+
+/* ---------- 空間健檢：走道 + 幾條常見尺寸規則 ---------- */
+const FRONT_SIDE = ['B','L','T','R'];                      // rot 0/90/180/270 → 本地下緣（正面）朝向的世界方位
+const FRONT_RULES = [                                      // 只看正面那一側
+  {type:'馬桶',   min:60, msg:'馬桶前方淨空'},
+  {type:'冰箱',   min:90, msg:'冰箱開門空間'},
+  {type:'流理台', min:90, msg:'廚房走道'},
+];
+const AROUND_RULES = [{type:'餐桌', min:75, msg:'餐桌旁拉椅空間'}];   // 看四周
+function doorSwingBox(f){           // 門扇掃過的 L×L 方框（旋轉後取外接框）
+  const L=f.w, down=(f.swing===0||f.swing===1), c=center(f);
+  const x0=f.x, x1=f.x+L, y0=down?f.y:f.y-L, y1=down?f.y+L:f.y;
+  const pts=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([px,py])=>{ const v=rot2(px-c.x,py-c.y,f.rot); return [c.x+v.x, c.y+v.y]; });
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+  return {L:Math.min(...xs), R:Math.max(...xs), T:Math.min(...ys), B:Math.max(...ys)};
+}
+function healthCheck(){
+  const gaps = gapsNow(), out = [], done = new Set();
+  const add = (g,txt) => { if(done.has(g.pair)) return; done.add(g.pair);
+    out.push({id:g.owner, txt, x:(g.x1+g.x2)/2, y:(g.y1+g.y2)/2}); };
+  // ① 門開啟範圍被家具擋（最具體，先報）
+  state.furniture.filter(isDoor).forEach(dr => {
+    const s = doorSwingBox(dr), need = dr.w*dr.w*0.15;
+    state.furniture.forEach(f => {
+      if(f.id===dr.id || CLEAR_SKIP.has(f.type) || f.rot%90!==0) return;
+      const b = furnBox(f);
+      const ov = Math.max(0, Math.min(s.R,b.R)-Math.max(s.L,b.L)) * Math.max(0, Math.min(s.B,b.B)-Math.max(s.T,b.T));
+      if(ov > need) out.push({id:f.id, txt:`門開啟範圍被「${f.label||f.type}」擋住`, x:(s.L+s.R)/2, y:(s.T+s.B)/2});
+    });
+  });
+  // ② 特定家具正面淨空
+  state.furniture.forEach(f => {
+    const r = FRONT_RULES.find(r => r.type===f.type); if(!r || f.rot%90!==0) return;
+    const g = gaps.find(g => g.owner===f.id && g.side===FRONT_SIDE[((f.rot/90)%4+4)%4]);
+    // 正面貼死（0 cm）就是擺錯方向，這裡不套用「0 = 刻意貼牆」的豁免
+    if(g && g.gap<r.min) add(g, `${r.msg}僅 ${Math.round(g.gap)} cm（建議 ≥ ${r.min}）`);
+  });
+  // ③ 四周退距
+  state.furniture.forEach(f => {
+    const r = AROUND_RULES.find(r => r.type===f.type); if(!r) return;
+    gaps.filter(g => g.owner===f.id && g.gap>=1 && g.gap<r.min)
+        .forEach(g => add(g, `${r.msg}僅 ${Math.round(g.gap)} cm（建議 ≥ ${r.min}）`));
+  });
+  // ④ 一般走道
+  gaps.filter(g => g.gap>=1 && g.gap<clearance.min)
+      .forEach(g => add(g, `走道僅 ${Math.round(g.gap)} cm（建議 ≥ ${clearance.min}）`));
+  return out;
+}
+let healthList = [];
+function renderHealth(){
+  const box = $('healthOut'); if(!box) return;
+  if(!clearance.on){ healthList=[]; box.innerHTML = '<p class="hint">勾選後檢查走道寬度與門前、馬桶前等常見淨空。</p>'; return; }
+  healthList = healthCheck();
+  if(!healthList.length){ box.innerHTML = `<p class="health-ok">✓ 走道皆 ≥ ${clearance.min} cm，未發現問題</p>`; return; }
+  box.innerHTML = `<p class="health-warn">⚠ ${healthList.length} 項提醒（點一下跳過去看）</p>`
+    + `<ul class="healthlist">${healthList.map((it,i)=>`<li><button type="button" data-i="${i}">${esc(it.txt)}</button></li>`).join('')}</ul>`;
+  box.querySelectorAll('button').forEach(b => b.onclick = () => focusHit(healthList[+b.dataset.i]));
+}
+function focusHit(it){
+  if(!it) return;
+  if(it.id && state.furniture.some(f => f.id===it.id)) setSel([{kind:'furniture', id:it.id}]);
+  const asp = view.h/view.w, z = Math.min(view.w, 500);
+  view = {x:it.x-z/2, y:it.y-z*asp/2, w:z, h:z*asp};
+  render(); applyView();
 }
 function innerSvg(){
   let s = '';
@@ -400,6 +578,7 @@ function innerSvg(){
   if(showAreas) s += roomsSvg();
   if(showTitleBlock) s += titleBlockSvg();
   s += scaleBarSvg();
+  s += clearanceSvg();
   const sg = single();
   if(sg && sg.kind==='furniture') s += gapDimsSvg(sg.o);
   s += measureSvg();
@@ -419,6 +598,7 @@ function render(){
   svg.innerHTML = innerSvg();
   bindShapes();
   renderEditor();
+  renderHealth();
   updatePyeong();
   const empty = !state.walls.length && !state.furniture.length && !state.texts.length && !state.bg;
   const eh = $('emptyHint'); if(eh) eh.hidden = !empty;
@@ -1025,7 +1205,12 @@ function printPlan(){
 }
 
 /* ---------- 工具列輸入 ---------- */
-function syncInputs(){ $('areaW').value=state.area.w; $('areaH').value=state.area.h; $('gridSel').value=state.grid; $('snapChk').checked=state.snap; updatePyeong(); }
+function syncInputs(){ $('areaW').value=state.area.w; $('areaH').value=state.area.h; $('gridSel').value=state.grid; $('snapChk').checked=state.snap; syncClearInputs(); updatePyeong(); }
+function syncClearInputs(){
+  const chk=$('clearChk'), num=$('clearMin'), sel=$('clearPreset'); if(!chk) return;
+  chk.checked = clearance.on; num.value = clearance.min;
+  sel.value = [...sel.options].some(o => o.value === String(clearance.min)) ? String(clearance.min) : '';
+}
 
 function bindUI(){
   $('areaW').onchange = e => { const p=snapshot(); state.area.w=+e.target.value||600; clampArea(); fitView(); commit(p); render(); syncInputs(); };
@@ -1041,6 +1226,11 @@ function bindUI(){
   $('addText').onclick    = addText;
   $('areaChk').onchange   = e => { showAreas=e.target.checked; render(); };
   $('titleChk').onchange  = e => { showTitleBlock=e.target.checked; render(); };
+
+  // 空間健檢
+  $('clearChk').onchange   = e => { clearance.on = e.target.checked; saveClearance(); render(); };
+  $('clearMin').onchange   = e => { clearance.min = Math.max(30, Math.min(300, +e.target.value || 70)); saveClearance(); syncClearInputs(); render(); };
+  $('clearPreset').onchange= e => { if(!e.target.value) return; clearance.min = +e.target.value; saveClearance(); syncClearInputs(); render(); };
 
   $('btnUndo').onclick = undo; $('btnRedo').onclick = redo;
   $('btnExample').onclick = loadExample; $('btnSave').onclick = saveFile; $('btnCopy').onclick = copyImage;
@@ -1146,13 +1336,13 @@ function loadExample(){
   const T=(x,y,t,size)=>L.texts.push({id:nid(),x,y,t,size});
   W(0,0,1000,0); W(1000,0,1000,800); W(0,800,1000,800); W(0,0,0,800);
   W(0,350,1000,350); W(400,0,400,350); W(700,0,700,350); W(820,350,820,800);
-  F('雙人床',0,20); F('衣櫃',280,20); T(160,235,'主臥',26);          // 床、衣櫃都靠牆
-  F('單人床',410,20); F('書桌',580,20); T(500,235,'次臥',24);
-  F('單人床',710,20); F('衣櫃',880,20); T(800,235,'次臥',24);
+  F('雙人床',0,0); F('衣櫃',280,0); T(160,235,'主臥',26);            // 床、衣櫃都靠牆（貼齊上牆內面 y=0）
+  F('單人床',410,0); F('書桌',580,0); T(500,235,'次臥',24);
+  F('單人床',710,0); F('衣櫃',880,0); T(800,235,'次臥',24);
   F('沙發',0,420); F('茶几',60,520); F('電視櫃',40,760); T(100,670,'客廳',26);
   F('餐桌',420,450); T(430,590,'餐廳',22);
-  F('流理台',700,420,90); F('冰箱',750,650); T(700,590,'廚房',20);   // 開放式廚房，與客餐廳同一空間，不設門
-  F('浴缸',830,370); F('馬桶',850,740); T(870,480,'衛浴',20);
+  F('流理台',700,420,90); F('冰箱',750,650,180); T(700,590,'廚房',20); // 開放式廚房，不設門；冰箱轉 180 讓開門朝廚房內
+  F('浴缸',830,360); F('馬桶',830,740,180); T(870,480,'衛浴',20);      // 浴缸貼左上牆面；馬桶正面朝室內
   F('門',150,350,0,3); F('門',440,350,0,3); F('門',720,350,0,3);   // 門厚度貼齊牆面，開向房內空地不擋家具
   F('門',780,645,90,3); F('門',300,790,0,3);                        // 衛浴門開向客廳、前門
   if(empty){ doc.tabs[doc.active]=L; setActive(doc.active); } else { doc.tabs.push(L); setActive(doc.tabs.length-1); }
@@ -1162,7 +1352,9 @@ function loadExample(){
 
 /* ---------- 啟動 ---------- */
 async function init(){
+  if(!svg) return;               // 無畫布（如 selftest.html）→ 只載函式，不啟動 UI
   doc = null;
+  loadClearance();
   if(location.hash.startsWith('#d=')){          // 分享連結
     try{ const o=JSON.parse(await ungzipB64(location.hash.slice(3))); if(o&&o.tabs) doc=o; }catch(e){}
     history.replaceState(null,'',location.pathname+location.search);

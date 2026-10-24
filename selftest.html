@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><title>走道檢查 selftest</title>
+<style>body{font-family:ui-monospace,monospace;padding:20px;font-size:13px;line-height:1.7}
+.p{color:#137a3d}.f{color:#c2185b;font-weight:700}h1{font-size:15px}</style></head>
+<body>
+<h1>checkClearance() selftest</h1>
+<div id="out">執行中…</div>
+<script src="app.js"></script>
+<script>
+// app.js 無 #board 時 init() 直接 return，只留函式可測。
+const area = {w:400, h:300}, grid = 10;
+const F = (id,type,x,y,w,d,rot) => ({id, type, x, y, w, d, rot:rot||0, label:''});
+let pass = 0, fail = 0; const rows = [];
+function eq(name, got, want){
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  rows.push(`<div class="${ok?'p':'f'}">${ok?'PASS':'FAIL'} — ${name}　got=${JSON.stringify(got)} want=${JSON.stringify(want)}</div>`);
+}
+
+// 1) 沙發貼左上牆：淨距 0 是刻意配置，不得警告
+eq('貼牆(0cm)不警告', checkClearance([F('a','沙發',0,0,200,90)], [], area, grid, 70).length, 0);
+
+// 2) 餐桌右側離牆 65cm，門檻 70 → 1 筆、數值 65
+{ const v = checkClearance([F('a','餐桌',215,0,120,80)], [], area, grid, 70);
+  eq('65cm 觸發筆數', v.length, 1);
+  eq('65cm 讀數', v[0] && Math.round(v[0].gap), 65); }
+
+// 3) 同一張圖，門檻降到 60 → 不觸發
+eq('門檻 60 不觸發', checkClearance([F('a','餐桌',215,0,120,80)], [], area, grid, 60).length, 0);
+
+// 4) 家具對家具相距 40cm：兩邊各算一次，去重後只報 1 筆
+{ const v = checkClearance([F('a','衣櫃',0,0,100,60), F('b','書桌',140,0,100,60)], [], area, grid, 70);
+  eq('家具對家具去重', v.length, 1);
+  eq('家具間距讀數', v[0] && Math.round(v[0].gap), 40); }
+
+// 5) 水電符號不當障礙物、也不被檢查
+eq('插座不參與檢查', checkClearance([F('a','插座',150,0,15,8)], [], area, grid, 70).length, 0);
+{ const v = checkClearance([F('a','衣櫃',0,0,100,60), F('p','插座',120,0,15,8), F('b','書桌',140,0,100,60)], [], area, grid, 70);
+  eq('插座不切斷走道', v.length, 1);
+  eq('插座不影響讀數', v[0] && Math.round(v[0].gap), 40); }
+
+// 6) 牆也是障礙物：內牆 x=200 往 + 側填滿一格（厚 10 → 牆面 200/210），衣櫃右緣 100 → 淨距 100
+{ const v = checkClearance([F('a','衣櫃',0,0,100,60)], [{id:'w1',x1:200,y1:0,x2:200,y2:300}], area, grid, 120);
+  eq('對牆觸發筆數', v.length, 1);
+  eq('對牆讀數', v[0] && Math.round(v[0].gap), 100); }
+
+// 7) 旋轉 90° 家具用視覺外框：衣櫃 120×60 轉 90 → 外框 60×120（x 30..90、y -30..90）
+{ const g = clearanceGaps([F('a','衣櫃',0,0,120,60,90)], [], area, grid);
+  const R = g.find(x => x.side==='R'), B = g.find(x => x.side==='B');
+  eq('旋轉後右側淨距', R && Math.round(R.gap), 310);   // 400-90
+  eq('旋轉後下方淨距', B && Math.round(B.gap), 210); } // 300-90
+
+document.getElementById('out').innerHTML =
+  `<p><b>${pass} passed, ${fail} failed</b></p>` + rows.join('');
+</script>
+</body>
+</html>

@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>房屋家具配置<span class="ver">v2</span></div>
+  <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>房屋家具配置<span class="ver">v2</span><span class="savestate" id="saveState" aria-live="polite"></span></div>
   <div class="toolgroups">
     <div class="group">
       <button id="btnUndo" title="復原 (Ctrl+Z)" aria-label="復原"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>復原</span></button>
@@ -72,6 +72,8 @@
     <h3>其他</h3>
     <ul>
       <li><b>房間面積</b>：勾選後牆圍出的每間房自動標坪數。</li>
+      <li><b>空間健檢</b>：勾「標出太窄的走道」，圖上小於設定值的空隙會標紅並列在左側，點一下跳過去看。貼牆（距離 0）不算違規。</li>
+      <li><b>水電符號</b>：插座／開關／網路孔是電氣圖示意符號，畫面大小為好辨識，非實際器具尺寸，也不列入走道計算。</li>
       <li><b>底圖描圖</b>：上傳現成平面圖→校準比例→描牆擺家具。</li>
       <li><b>分頁</b>：多方案並存對比；<b>分享</b>複製連結、<b>長圖</b>含所有分頁、<b>列印</b>可另存 PDF。</li>
     </ul>
@@ -100,6 +102,22 @@
       </div>
       <label class="chk"><input type="checkbox" id="areaChk"> 顯示房間面積</label>
       <label class="chk"><input type="checkbox" id="titleChk" checked> 顯示圖框標題</label>
+    </section>
+
+    <section class="panel">
+      <h2>空間健檢 <span class="sub">走道夠不夠寬</span></h2>
+      <label class="chk"><input type="checkbox" id="clearChk"> 標出太窄的走道</label>
+      <div class="row" style="margin-top:10px">
+        <label>最少 <input type="number" id="clearMin" class="num" min="30" max="300" step="5" value="70" style="width:70px"> cm</label>
+        <select id="clearPreset">
+          <option value="">自訂</option>
+          <option value="60">60・側身勉強過</option>
+          <option value="70" selected>70・一個人好走</option>
+          <option value="90">90・標準走道</option>
+          <option value="120">120・兩人並行</option>
+        </select>
+      </div>
+      <div id="healthOut"><p class="hint">勾選後檢查走道寬度與門前、馬桶前等常見淨空。</p></div>
     </section>
 
     <section class="panel" id="editorSection">
@@ -154,6 +172,6 @@
   </div>
 </main>
 
-<script src="app.js?v=27" defer></script>
+<script src="app.js?v=28" defer></script>
 </body>
 </html>
