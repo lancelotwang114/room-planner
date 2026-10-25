@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,300,0,0&display=block">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 <header class="topbar">
@@ -73,16 +73,19 @@
     <ul>
       <li><b>選取</b>：拖家具移動；拖空白處框選多個；Shift 點擊加選。</li>
       <li><b>平移</b>：拖曳畫布；也可空白鍵／中鍵／雙指。</li>
-      <li><b>畫牆</b>：按住拖一道牆，牆面對齊格線，家具會自動貼齊。</li>
+      <li><b>房間</b>：拖一個方框生成四面牆；下方提示列可「輸入長寬」直接建。</li>
+      <li><b>畫牆</b>：點起點再一路點下去連續畫，點回起點自動封閉，Esc 結束；預設水平／垂直，Shift 畫斜牆。選取牆可輸入精確長度。</li>
       <li><b>量測</b>：拖一條線量任意距離（cm）。</li>
     </ul>
     <h3>選取家具後</h3>
     <ul>
+      <li>上方浮出小工具列：旋轉、再製、刪除（門可換開向）。</li>
       <li>四角控制點拖曳改大小、上方圓點旋轉（吸附 15°，Shift 自由）。</li>
       <li>自動顯示到周圍牆的間距；右側「選取」頁可輸入精確 cm、換色、加標籤。</li>
     </ul>
     <h3>快捷鍵</h3>
     <ul class="keys">
+      <li><kbd>V</kbd> 選取　<kbd>H</kbd> 平移　<kbd>B</kbd> 房間　<kbd>W</kbd> 畫牆　<kbd>M</kbd> 量測　<kbd>T</kbd> 文字</li>
       <li><kbd>方向鍵</kbd> 微調（<kbd>Shift</kbd>=1cm）</li>
       <li><kbd>R</kbd> 旋轉 90°</li>
       <li><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> 復原／重做</li>
@@ -107,19 +110,28 @@
 
 <main class="layout">
   <nav class="dock" aria-label="工具">
-    <button id="modeSelect" class="tool" aria-pressed="true"><span class="msr">arrow_selector_tool</span><span>選取</span></button>
-    <button id="modePan" class="tool" aria-pressed="false"><span class="msr">pan_tool</span><span>平移</span></button>
+    <button id="modeSelect" class="tool" aria-pressed="true" title="選取（V）" aria-keyshortcuts="V"><span class="msr">arrow_selector_tool</span><span>選取</span></button>
+    <button id="modePan" class="tool" aria-pressed="false" title="平移（H）" aria-keyshortcuts="H"><span class="msr">pan_tool</span><span>平移</span></button>
     <hr>
-    <button id="modeRoom" class="tool" aria-pressed="false"><span class="msr">rectangle</span><span>房間</span></button>
-    <button id="modeWall" class="tool" aria-pressed="false"><span class="msr">draw</span><span>畫牆</span></button>
-    <button id="modeMeasure" class="tool" aria-pressed="false"><span class="msr">straighten</span><span>量測</span></button>
+    <button id="modeRoom" class="tool" aria-pressed="false" title="房間（B）" aria-keyshortcuts="B"><span class="msr">rectangle</span><span>房間</span></button>
+    <button id="modeWall" class="tool" aria-pressed="false" title="畫牆（W）" aria-keyshortcuts="W"><span class="msr">draw</span><span>畫牆</span></button>
+    <button id="modeMeasure" class="tool" aria-pressed="false" title="量測（M）" aria-keyshortcuts="M"><span class="msr">straighten</span><span>量測</span></button>
     <hr>
-    <button id="addText" class="tool"><span class="msr">title</span><span>文字</span></button>
+    <button id="addText" class="tool" title="文字（T）" aria-keyshortcuts="T"><span class="msr">title</span><span>文字</span></button>
   </nav>
 
   <div class="canvas-wrap">
     <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
-    <div id="emptyHint" class="empty-hint" hidden>從右側<b>家具</b>頁拖家具進來，或從 <b>存檔 ▾</b> 選單載入範例</div>
+    <div id="emptyHint" class="empty-hint start" hidden>
+      <h3>從哪裡開始？</h3>
+      <p>也可以直接用工具列畫牆，或從家具頁拖家具進來</p>
+      <div class="start-btns">
+        <button type="button" id="startRoom"><span class="msr">square_foot</span>輸入房間尺寸</button>
+        <button type="button" id="startExample"><span class="msr">home</span>載入範例</button>
+        <button type="button" id="startTrace"><span class="msr">image</span>描現成平面圖</button>
+      </div>
+    </div>
+    <div id="ctxBar" class="ctx-bar" role="toolbar" aria-label="選取物件操作" hidden></div>
     <p class="mode-hint" id="modeHint">拖曳家具移動；拖空白處框選多個；Shift 點擊加選。</p>
     <div class="zoom-ctl" role="group" aria-label="縮放">
       <button id="zoomOut" aria-label="縮小"><span class="msr">remove</span></button>
@@ -148,6 +160,7 @@
     <div class="ipane" data-pane="furn">
       <section class="panel">
         <h2>家具目錄 <span class="sub">拖曳放入畫布</span></h2>
+        <input type="search" id="catSearch" placeholder="搜尋家具，例如：床、櫃" aria-label="搜尋家具">
         <div id="catalog"></div>
       </section>
     </div>
@@ -206,6 +219,6 @@
   </aside>
 </main>
 
-<script src="app.js?v=30" defer></script>
+<script src="app.js?v=33" defer></script>
 </body>
 </html>

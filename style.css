@@ -200,15 +200,15 @@ label.range{gap:8px}
 label.range input{flex:1}
 input[type=checkbox],input[type=range]{accent-color:var(--accent)}
 input[type=checkbox]{width:15px; height:15px; margin:0}
-input[type=number],select,input[type=text]{
+input[type=number],select,input[type=text],input[type=search]{
   font-family:inherit; font-size:13px; height:34px; padding:0 10px; border:1px solid var(--line2);
   border-radius:var(--r-ctl); background:var(--surface-2); color:var(--ink); width:74px;
   transition:border-color .15s,box-shadow .15s;
 }
-input[type=number]:hover,select:hover,input[type=text]:hover{border-color:var(--muted)}
-input[type=number]:focus,select:focus,input[type=text]:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+input[type=number]:hover,select:hover,input[type=text]:hover,input[type=search]:hover{border-color:var(--muted)}
+input[type=number]:focus,select:focus,input[type=text]:focus,input[type=search]:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
 input.num{font-family:var(--mono)}
-input[type=text]{width:100%; font-family:var(--sans)}
+input[type=text],input[type=search]{width:100%; font-family:var(--sans)}
 .pyeong{margin:2px 0 14px; font-size:24px; font-weight:700; color:var(--ink); letter-spacing:-.3px}
 .hint{font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.6}
 :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
@@ -238,7 +238,9 @@ input[type=text]{width:100%; font-family:var(--sans)}
 .toolwide.del:hover{background:var(--danger-light)}
 
 /* ---- catalog ---- */
+#catSearch{margin-bottom:12px}
 #catalog .cat-group{margin-bottom:14px}
+#catalog [hidden]{display:none}
 .cat-title{font-size:12px; color:var(--muted); margin:0 0 6px; font-weight:600}
 .cat-items{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .furn-chip{
@@ -300,6 +302,35 @@ input[type=text]{width:100%; font-family:var(--sans)}
   padding:14px 22px; border:1px dashed #D4D4D8; border-radius:var(--radius);
 }
 .empty-hint b{color:var(--canvas-accent); font-weight:600}
+.empty-hint[hidden]{display:none}
+/* 空白格局：三種開始方式（畫布恆白，按鈕用固定淺色＋主色） */
+.empty-hint.start{pointer-events:auto; padding:20px 22px; border-style:solid; border-color:#E4E4E7; box-shadow:0 8px 24px -10px rgba(var(--shadow),.25)}
+.empty-hint h3{margin:0 0 4px; font-size:15px; color:#27272A}
+.empty-hint p{margin:0 0 14px}
+.start-btns{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.start-btns button{
+  display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 10px; min-width:104px; border-radius:12px; cursor:pointer;
+  border:1px solid #E4E4E7; background:#fff; color:#3F3F46; font:inherit; font-size:12px; font-weight:600; transition:border-color .15s,color .15s,transform .1s;
+}
+.start-btns button:hover{border-color:var(--canvas-accent); color:var(--canvas-accent)}
+.start-btns button:active{transform:scale(.97)}
+.start-btns .msr{font-size:22px; color:var(--canvas-accent)}
+
+/* 選取浮動工具列 */
+.ctx-bar{
+  position:absolute; z-index:25; display:flex; align-items:center; gap:2px; padding:3px;
+  background:var(--paper); border:1px solid var(--line); border-radius:999px;
+  box-shadow:0 1px 2px rgba(var(--shadow),.06),0 6px 18px -6px rgba(var(--shadow),.22);
+}
+.ctx-bar[hidden]{display:none}
+.ctx-bar button{width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:999px; background:transparent; color:var(--ink); cursor:pointer}
+.ctx-bar button:hover{background:var(--hover-bg); color:var(--accent)}
+.ctx-bar button[data-act=del]:hover{background:var(--danger-light); color:var(--danger)}
+.ctx-bar .msr{font-size:19px}
+.ctx-bar .cnt{padding:0 8px 0 10px; font-size:12px; color:var(--muted)}
+.ctx-bar .len{gap:4px; padding-left:6px}
+.ctx-bar .len input{width:78px; height:30px; font-family:var(--mono)}
+.ctx-bar .len em{font-style:normal; color:var(--muted); font-size:12px; margin-right:4px}
 
 /* 模式提示膠囊（畫布左下） */
 .mode-hint{
@@ -308,6 +339,11 @@ input[type=text]{width:100%; font-family:var(--sans)}
   color:var(--muted); font-size:12px; line-height:1.4; pointer-events:none;
   box-shadow:0 1px 2px rgba(var(--shadow),.05),0 4px 14px -6px rgba(var(--shadow),.14);
 }
+.mode-hint button{
+  pointer-events:auto; margin-left:4px; padding:3px 10px; border-radius:999px; border:1px solid var(--accent);
+  background:var(--hover-bg); color:var(--accent); font:inherit; font-weight:600; cursor:pointer;
+}
+.mode-hint button:hover{background:var(--accent); color:var(--on-accent)}
 
 /* ---- zoom control ---- */
 .zoom-ctl{
@@ -417,7 +453,12 @@ input[type=text]{width:100%; font-family:var(--sans)}
   .tool{width:46px}
   .canvas-wrap{min-height:0; padding:10px}
   .mode-hint{display:none}
+  .mode-hint.act{display:block; left:18px; bottom:64px; max-width:calc(100% - 36px)}   /* 房間模式要露出「輸入長寬」 */
   .zoom-ctl{right:18px; bottom:18px}
+  .empty-hint.start{width:calc(100% - 40px); padding:12px}   /* 手機畫布矮：收掉說明行，三鈕維持一排 */
+  .empty-hint.start p{display:none}
+  .empty-hint h3{margin-bottom:10px}
+  .start-btns button{min-width:0; padding:8px 4px; font-size:11px}
   .insp{width:100%; max-height:42vh; border-left:0; border-top:1px solid var(--line)}
   .sidebar-hidden .insp{display:none}
 }

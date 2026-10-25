@@ -4,11 +4,11 @@
 
 /* ---------- 內建家具目錄（台灣常見預設 寬×深 cm） ---------- */
 const CATALOG = [
-  {cat:'床',   color:'#c7d2fe', items:[['單人床',90,190],['雙人床',152,190]]},
-  {cat:'客廳', color:'#bbf7d0', items:[['沙發',200,90],['茶几',120,60],['電視櫃',150,40]]},
-  {cat:'餐廚', color:'#fed7aa', items:[['餐桌',120,80],['冰箱',70,70],['流理台',180,60]]},
-  {cat:'收納', color:'#fde68a', items:[['衣櫃',120,60],['書桌',120,60]]},
-  {cat:'衛浴', color:'#a5f3fc', items:[['馬桶',40,60],['浴缸',160,75]]},
+  {cat:'床',   color:'#c7d2fe', items:[['單人床',90,190],['雙人床',152,190],['加大雙人床',182,190]]},
+  {cat:'客廳', color:'#bbf7d0', items:[['沙發',200,90],['單人沙發',90,85],['L型沙發',250,160],['茶几',120,60],['邊桌',45,45],['電視櫃',150,40]]},
+  {cat:'餐廚', color:'#fed7aa', items:[['餐桌',120,80],['餐椅',45,50],['冰箱',70,70],['流理台',180,60]]},
+  {cat:'收納', color:'#fde68a', items:[['衣櫃',120,60],['書桌',120,60],['書桌椅',55,55],['書櫃',80,30],['鞋櫃',90,35],['斗櫃',80,45],['化妝台',100,45]]},
+  {cat:'衛浴', color:'#a5f3fc', items:[['馬桶',40,60],['浴缸',160,75],['淋浴間',90,90],['洗手台',60,45],['洗衣機',60,65]]},
   {cat:'開口', color:'#e5e7eb', items:[['門',90,10],['滑門',150,10],['窗',120,10],['落地窗',200,10]]},
   {cat:'結構', color:'#cbd5e1', items:[['柱子',30,30]]},
   {cat:'水電', color:'#e9d5ff', items:[['插座',15,8],['專用插座',15,8],['開關',15,8],['網路孔',15,8]]},
@@ -47,7 +47,7 @@ function blankLayout(name){
   return { name, date:todayStr(), area:{w:600,h:500}, grid:10, snap:true, walls:[], furniture:[], texts:[], customTypes:[] };
 }
 function blankDoc(){ return { version:2, active:0, tabs:[ blankLayout('格局 1') ] }; }
-function setActive(i){ doc.active = i; state = doc.tabs[i]; }
+function setActive(i){ endWallDraft(); doc.active = i; state = doc.tabs[i]; }   // 換分頁／復原／讀檔都經過這裡，畫一半的牆一併取消
 function uid(){ return 'i' + (nextId++); }
 function fixIds(){
   let max = 0;
@@ -104,12 +104,18 @@ function askForm(title, fields){
 }
 let H_CM = 6;   // 控制點半徑（公分，依縮放換算成 ~9px）
 function calcHandleSize(){ H_CM = (view.w / (svg.clientWidth||800)) * 9; }
+function pxCm(n){ return n * view.w / (svg.clientWidth||800); }   // 螢幕 px → 公分
+// 畫的過程即時尺寸標籤（固定約 13px 字，不隨縮放變大變小）
+function liveLabel(x, y, txt){
+  return `<text class="dim" x="${x}" y="${y}" font-size="${pxCm(13)}" text-anchor="middle" fill="var(--canvas-accent)" paint-order="stroke" stroke="#fff" stroke-width="${pxCm(4)}" font-weight="700" pointer-events="none">${txt}</text>`;
+}
 
 /* ---------- 縮放 / 平移 ---------- */
 function fitView(){ const M=marginCm(); view = { x:-M, y:-M, w:state.area.w+2*M, h:state.area.h+2*M }; fitW = view.w; }
 function applyView(){
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   const lbl = $('zoomLabel'); if(lbl) lbl.textContent = Math.round((fitW||view.w)/view.w*100) + '%';
+  positionCtxBar();
 }
 function zoomBy(f, cx, cy){
   if(!view) fitView();
@@ -269,11 +275,11 @@ const slide = (x,y,w,d) => {
 };
 const column = (x,y,w,d) => `<line x1="${x}" y1="${y}" x2="${x+w}" y2="${y+d}"/><line x1="${x+w}" y1="${y}" x2="${x}" y2="${y+d}"/>`;
 const GLYPH = {
-  '單人床':(x,y,w,d)=>bed(x,y,w,d,false), '雙人床':(x,y,w,d)=>bed(x,y,w,d,true),
-  '沙發':sofa, '茶几':table, '電視櫃':cabinet,
+  '單人床':(x,y,w,d)=>bed(x,y,w,d,false), '雙人床':(x,y,w,d)=>bed(x,y,w,d,true), '加大雙人床':(x,y,w,d)=>bed(x,y,w,d,true),
+  '沙發':sofa, '單人沙發':sofa, '茶几':table, '邊桌':table, '電視櫃':cabinet,
   '餐桌':table, '冰箱':fridge, '流理台':counter,
-  '衣櫃':wardrobe, '書桌':table, '書櫃':shelf,
-  '馬桶':toilet, '浴缸':bath, '窗':win, '落地窗':winTall, '滑門':slide, '柱子':column,
+  '衣櫃':wardrobe, '書桌':table, '書櫃':shelf, '鞋櫃':cabinet, '斗櫃':cabinet, '化妝台':table,
+  '馬桶':toilet, '浴缸':bath, '洗手台':counter, '窗':win, '落地窗':winTall, '滑門':slide, '柱子':column,
 };
 /* 水電符號：底邊＝牆線，符號往室內側畫。旋轉沿用家具的 rot。 */
 const socket = (x,y,w,d) => {
@@ -596,12 +602,14 @@ function render(){
   svg.classList.toggle('mode-measure', mode==='measure');
   svg.classList.toggle('mode-pan', mode==='pan' || spaceDown);
   svg.innerHTML = innerSvg();
+  if(wallDraft) svg.appendChild(wallDraft.el);   // 重繪會清掉畫牆預覽，掛回去
   bindShapes();
   renderEditor();
+  placeCtxBar();
   renderHealth();
   updatePyeong();
   const empty = !state.walls.length && !state.furniture.length && !state.texts.length && !state.bg;
-  const eh = $('emptyHint'); if(eh) eh.hidden = !empty;
+  const eh = $('emptyHint'); if(eh) eh.hidden = !empty || mode!=='select';   // 開始畫了就讓出畫布
   const bc = $('bgCtl'); if(bc) bc.hidden = !state.bg;
   const bo = $('bgOpacity'); if(bo && state.bg) bo.value = state.bg.opacity;
   const lbl = $('zoomLabel'); if(lbl) lbl.textContent = Math.round((fitW||view.w)/view.w*100) + '%';
@@ -736,7 +744,7 @@ function startSingleDrag(e, o, kind, g){
   let moved=false;
   function mv(ev){ if(pinching) return; const p=toSvg(ev);
     const r=snapWithGuides(o,kind, ox+(p.x-start.x), oy+(p.y-start.y));
-    o.x=r.x; o.y=r.y; moved=true;
+    o.x=r.x; o.y=r.y; moved=true; hideCtxBar();
     if(g) g.setAttribute('transform', `translate(${o.x-ox} ${o.y-oy}) ${base}`);
     drawGuides(r.guides);
   }
@@ -759,7 +767,7 @@ function startGroupDrag(e){
   let moved = false;
   function mv(ev){
     if(pinching) return;
-    const p = toSvg(ev); let dx=p.x-start.x, dy=p.y-start.y; moved = true;
+    const p = toSvg(ev); let dx=p.x-start.x, dy=p.y-start.y; moved = true; hideCtxBar();
     items.forEach(it => { if(it.g) it.g.setAttribute('transform', `translate(${dx} ${dy}) ${it.base}`); });
   }
   function up(ev){
@@ -840,43 +848,93 @@ function startRotate(e, o){
 }
 
 /* ---------- 牆：畫 / 端點拖曳 ---------- */
+/* 連續畫牆：點起點 → 每點一下接一道牆；點回起點自動封閉；同一點點兩下／Esc／右鍵結束。
+   也可按住拖曳畫一段（觸控好用），放開後從終點繼續。預設鎖水平／垂直，Shift 自由角度。 */
+let wallDraft = null;             // {a:目前起點, first:這串第一點, el:預覽 <g>}
+function wallPoint(ev, a){
+  const p = {x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)};
+  if(a && !ev.shiftKey){ if(Math.abs(p.x-a.x) < Math.abs(p.y-a.y)) p.x = a.x; else p.y = a.y; }
+  return p;
+}
+function drawWallPreview(ev){
+  if(!wallDraft) return;
+  const a = wallDraft.a, f = wallDraft.first, b = ev ? wallPoint(ev, a) : a;
+  const len = Math.round(Math.hypot(b.x-a.x, b.y-a.y));
+  wallDraft.el.innerHTML = `<circle cx="${f.x}" cy="${f.y}" r="${H_CM*1.2}" fill="none" stroke="var(--canvas-accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>`
+    + `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--canvas-accent)" stroke-width="${state.grid}" stroke-linecap="round" stroke-dasharray="14 8" opacity="0.7"/>`
+    + (len ? liveLabel((a.x+b.x)/2, (a.y+b.y)/2 - pxCm(12), `${len} cm`) : '');
+}
+function endWallDraft(){ if(!wallDraft) return; wallDraft.el.remove(); wallDraft = null; }
+function addWallTo(b){
+  const a = wallDraft.a;
+  if(Math.hypot(b.x-a.x, b.y-a.y) < Math.max(5, pxCm(6))){ endWallDraft(); render(); return; }    // 同一點再點一次 = 結束
+  const prev = snapshot(); state.walls.push({id:uid(), x1:a.x, y1:a.y, x2:b.x, y2:b.y, t:WALL_THICK}); commit(prev);
+  if(b.x===wallDraft.first.x && b.y===wallDraft.first.y){ endWallDraft(); showToast('已封閉成房間'); }
+  else wallDraft.a = b;
+  render();
+}
 function startWallDraw(e){
   e.preventDefault();
-  const a = {x:snap(toSvg(e).x), y:snap(toSvg(e).y)};
-  const NS='http://www.w3.org/2000/svg'; const line = document.createElementNS(NS,'line');
-  Object.entries({x1:a.x,y1:a.y,x2:a.x,y2:a.y,stroke:'var(--canvas-accent)','stroke-width':WALL_THICK,'stroke-linecap':'round','stroke-dasharray':'14 8',opacity:'0.7'}).forEach(([k,v])=>line.setAttribute(k,v));
-  svg.appendChild(line);
-  function mv(ev){ const b={x:snap(toSvg(ev).x),y:snap(toSvg(ev).y)}; line.setAttribute('x2',b.x); line.setAttribute('y2',b.y); }
+  if(!e.isPrimary || pinching) return;              // 雙指縮放的第二指不算點牆
+  if(e.button===2){ endWallDraft(); render(); return; }
+  if(!wallDraft){ const a = wallPoint(e); wallDraft = {a, first:a, el:document.createElementNS(NS,'g')}; svg.appendChild(wallDraft.el); }
+  else addWallTo(wallPoint(e, wallDraft.a));
+  drawWallPreview(e);
+  const down = toSvg(e);
+  const id = e.pointerId;
   function up(ev){
-    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
-    const b={x:snap(toSvg(ev).x),y:snap(toSvg(ev).y)}; line.remove();
-    if(Math.hypot(b.x-a.x,b.y-a.y) >= 5){ const prev=snapshot(); state.walls.push({id:uid(),x1:a.x,y1:a.y,x2:b.x,y2:b.y,t:WALL_THICK}); commit(prev); render(); }
+    if(ev.pointerId !== id) return;
+    window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+    if(ev.type==='pointercancel' || pinching) return;
+    const p = toSvg(ev);   // 按住拖過一段距離 → 放開點也算一下
+    if(wallDraft && Math.hypot(p.x-down.x, p.y-down.y) > pxCm(8)) addWallTo(wallPoint(ev, wallDraft.a));
   }
-  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+  window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+}
+function pushRoomWalls(x1, y1, x2, y2){
+  const ws = [{x1,y1,x2,y2:y1}, {x1:x2,y1,x2,y2}, {x1,y1:y2,x2,y2}, {x1,y1,x2:x1,y2}]   // 上右下左
+    .map(w => Object.assign({id:uid(), t:WALL_THICK}, w));
+  state.walls.push(...ws); return ws;
 }
 /* 畫房間：拖一個方框，一次生成四面外牆 */
 function startRoomDraw(e){
   e.preventDefault();
   const a = {x:snap(toSvg(e).x), y:snap(toSvg(e).y)};
-  const rect = document.createElementNS(NS,'rect');
-  Object.entries({fill:'var(--canvas-accent)','fill-opacity':'.06',stroke:'var(--canvas-accent)','stroke-width':WALL_THICK,'stroke-linejoin':'round','stroke-dasharray':'14 8',opacity:'0.75'}).forEach(([k,v])=>rect.setAttribute(k,v));
-  svg.appendChild(rect);
+  const g = document.createElementNS(NS,'g');
+  svg.appendChild(g);
   const box = b => ({x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(b.x-a.x), h:Math.abs(b.y-a.y)});
   function mv(ev){ const bx = box({x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)});
-    rect.setAttribute('x',bx.x); rect.setAttribute('y',bx.y); rect.setAttribute('width',bx.w); rect.setAttribute('height',bx.h); }
+    g.innerHTML = `<rect x="${bx.x}" y="${bx.y}" width="${bx.w}" height="${bx.h}" fill="var(--canvas-accent)" fill-opacity=".06" stroke="var(--canvas-accent)" stroke-width="${state.grid}" stroke-linejoin="round" stroke-dasharray="14 8" opacity="0.75"/>`
+      + liveLabel(bx.x+bx.w/2, bx.y+bx.h/2, `${bx.w} × ${bx.h} cm`); }
   function up(ev){
-    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); rect.remove();
+    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); g.remove();
     const bx = box({x:snap(toSvg(ev).x), y:snap(toSvg(ev).y)});
     if(bx.w >= state.grid && bx.h >= state.grid){
-      const prev = snapshot(); const x1=bx.x, y1=bx.y, x2=bx.x+bx.w, y2=bx.y+bx.h;
-      state.walls.push({id:uid(),x1,y1,x2,y2:y1,t:WALL_THICK});   // 上
-      state.walls.push({id:uid(),x1:x2,y1,x2,y2,t:WALL_THICK});   // 右
-      state.walls.push({id:uid(),x1,y1:y2,x2,y2,t:WALL_THICK});   // 下
-      state.walls.push({id:uid(),x1,y1,x2:x1,y2,t:WALL_THICK});   // 左
+      const prev = snapshot(); pushRoomWalls(bx.x, bx.y, bx.x+bx.w, bx.y+bx.h);
       commit(prev); render(); showToast('已建立房間（四面牆）');
     } else render();
   }
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+}
+/* 輸入長寬建房間：空白格局 → 房屋尺寸就是這間；已有牆 → 放在畫面中央，選取四面牆方便直接拖去定位 */
+async function addRoomByForm(){
+  const r = await askForm('輸入房間尺寸', [
+    {id:'w', label:'寬', type:'number', value:400, min:50, step:10, suffix:'cm'},
+    {id:'d', label:'深', type:'number', value:300, min:50, step:10, suffix:'cm'},
+  ]);
+  if(!r) return;
+  const w = Math.round(+r.w), h = Math.round(+r.d);
+  if(!(w>=50 && h>=50 && w<=3000 && h<=3000)){ showToast('尺寸需在 50～3000 cm'); return; }
+  const prev = snapshot(); let ws;
+  if(!state.walls.length && !state.furniture.length && !state.texts.length && !state.bg){   // 全空才用房間尺寸取代房屋尺寸
+    state.area.w = w; state.area.h = h; ws = pushRoomWalls(0, 0, w, h); fitView(); syncInputs();
+  } else {
+    const x = Math.max(0, snap(view.x+view.w/2-w/2)), y = Math.max(0, snap(view.y+view.h/2-h/2));
+    state.area.w = Math.max(state.area.w, x+w); state.area.h = Math.max(state.area.h, y+h); syncInputs();
+    ws = pushRoomWalls(x, y, x+w, y+h);
+  }
+  setSel(ws.map(o => ({kind:'wall', id:o.id}))); setMode('select');
+  commit(prev); render(); showToast(`已建立 ${w}×${h} 房間`);
 }
 function startWallEnd(e, w, end){
   const prev = snapshot();
@@ -926,6 +984,44 @@ function setColor(c){ const s=single(); if(!s||s.kind!=='furniture') return; con
 function deleteCustomType(n){ const p=snapshot(); state.customTypes=state.customTypes.filter(c=>c.n!==n); commit(p); renderCatalog(); }
 function rotateSel(){ const s=single(); if(!s||s.kind!=='furniture') return; const p=snapshot(); s.o.rot=(s.o.rot+90)%360; commit(p); render(); }
 function cycleDoor(){ const s=single(); if(!s||s.kind!=='furniture'||!isDoor(s.o)) return; const p=snapshot(); s.o.swing=((s.o.swing||0)+1)%4; commit(p); render(); }
+function setWallLen(o, v){         // 起點不動，終點沿原方向伸縮
+  const len = Math.hypot(o.x2-o.x1, o.y2-o.y1), n = Math.max(10, Math.min(3000, Math.round(+v)));
+  if(!len || !n){ render(); return; }
+  const p = snapshot(), k = n/len;
+  o.x2 = Math.round(o.x1+(o.x2-o.x1)*k); o.y2 = Math.round(o.y1+(o.y2-o.y1)*k); commit(p); render();
+}
+/* 選取浮動工具列：貼在選取物上方（放不下改下方），拖曳中隱藏、放開重新定位 */
+function hideCtxBar(){ const b = $('ctxBar'); if(b) b.hidden = true; }
+function placeCtxBar(){
+  const bar = $('ctxBar'); if(!bar) return;
+  if(!selected.length || mode!=='select'){ bar.hidden = true; return; }
+  const s = single();
+  const btn = (act, icon, label) => `<button type="button" data-act="${act}" title="${label}" aria-label="${label}"><span class="msr">${icon}</span></button>`;
+  let h = selected.length > 1 ? `<span class="cnt">${selected.length} 個</span>` : '';
+  if(s && s.kind==='wall') h += `<label class="len"><input type="number" id="ctxLen" value="${Math.round(Math.hypot(s.o.x2-s.o.x1, s.o.y2-s.o.y1))}" min="10" max="3000" step="5" aria-label="牆長度"><em>cm</em></label>`;
+  if(s && s.kind==='furniture') h += btn('rot', 'rotate_right', '旋轉 90°（R）');
+  if(s && s.kind==='furniture' && isDoor(s.o)) h += btn('door', 'door_open', '換開門方向');
+  h += btn('dup', 'content_copy', '再製（Ctrl+D）') + btn('del', 'delete', '刪除（Delete）');
+  bar.innerHTML = h;
+  const acts = {rot:rotateSel, door:cycleDoor, dup:duplicateSel, del:deleteSel};
+  bar.querySelectorAll('[data-act]').forEach(b => b.onclick = acts[b.dataset.act]);
+  if(s && s.kind==='wall') $('ctxLen').onchange = e => setWallLen(s.o, e.target.value);
+  positionCtxBar();
+}
+function positionCtxBar(){             // 縮放／平移只重新定位，不重建（避免打到一半的長度被清掉）
+  const bar = $('ctxBar'); if(!bar || !selected.length || mode!=='select') return;
+  let L=1e9, T=1e9, R=-1e9, B=-1e9;
+  selected.forEach(x => { const el = svg.querySelector(`g[data-id="${x.id}"]`); if(!el) return;
+    const r = el.getBoundingClientRect(); L=Math.min(L,r.left); T=Math.min(T,r.top); R=Math.max(R,r.right); B=Math.max(B,r.bottom); });
+  if(L > R){ bar.hidden = true; return; }
+  bar.hidden = false;
+  const wrap = bar.parentElement.getBoundingClientRect(), bw = bar.offsetWidth, bh = bar.offsetHeight;
+  let x = (L+R)/2 - wrap.left - bw/2, y = T - wrap.top - bh - 10;
+  if(y < 8) y = B - wrap.top + 10;
+  if(y + bh > wrap.height - 60) y = 8;   // 上下都放不下 → 釘在頂端，不壓到底部縮放列
+  bar.style.left = Math.max(8, Math.min(wrap.width-bw-8, x)) + 'px';
+  bar.style.top  = Math.max(8, Math.min(wrap.height-bh-8, y)) + 'px';
+}
 function nudge(dx,dy){
   if(!selected.length) return; const p=snapshot();
   selObjs().forEach((o,i) => { const k=selected[i].kind;
@@ -949,9 +1045,12 @@ function renderEditor(){
   }
   const {kind, o} = single();
   if(kind==='wall'){
-    box.innerHTML = `<div class="selrow"><span class="seltitle">牆</span><span class="hint">長度 ${Math.round(Math.hypot(o.x2-o.x1,o.y2-o.y1))} cm・厚 ${state.grid} cm</span></div>
-      <div class="selrow"><span class="hint">厚度＝格線；牆面對齊格線，家具會自動貼齊。</span></div>
+    const len = Math.round(Math.hypot(o.x2-o.x1,o.y2-o.y1));
+    box.innerHTML = `<div class="selrow"><span class="seltitle">牆</span><span class="hint">厚 ${state.grid} cm</span></div>
+      <div class="selrow"><label>長度 <input type="number" id="edLen" value="${len}" min="10" max="3000" step="5"> cm</label></div>
+      <div class="selrow"><span class="hint">改長度時起點不動，從另一端伸縮。厚度＝格線，家具會自動貼齊。</span></div>
       <div class="selrow"><button class="del" id="edDel">刪除</button></div>`;
+    $('edLen').onchange = e => setWallLen(o, e.target.value);
     $('edDel').onclick = deleteSel; return;
   }
   if(kind==='text'){
@@ -997,6 +1096,7 @@ function renderCatalog(){
     <div class="cat-items">${g.items.map(([n,w,d]) =>
       `<div class="furn-chip" data-type="${n}" tabindex="0" role="button" aria-label="加入 ${n}"><div class="swatch" style="background:${g.color}"></div><span class="nm">${n}</span><span class="dim">${w}×${d}</span></div>`).join('')}</div></div>`).join('')
     + custom
+    + `<p class="hint" id="catNone" hidden>找不到符合的家具，可用下方「自訂家具」新增。</p>`
     + `<button class="toolwide" id="addCustom"><span class="msr">add</span><span>自訂家具</span></button>`;
   box.querySelectorAll('.furn-chip').forEach(chip => {
     chip.addEventListener('pointerdown', e => startPaletteDrag(e, chip));
@@ -1004,6 +1104,16 @@ function renderCatalog(){
   });
   box.querySelectorAll('.chipx').forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); deleteCustomType(b.dataset.del); }); });
   $('addCustom').onclick = addCustomType;
+  filterCatalog();
+}
+function filterCatalog(){              // 名稱或分類含關鍵字就顯示；整組沒命中就收起
+  const q = ($('catSearch') ? $('catSearch').value : '').trim();
+  $('catalog').querySelectorAll('.cat-group').forEach(g => {
+    const inCat = g.querySelector('.cat-title').textContent.includes(q); let any = false;
+    g.querySelectorAll('.furn-chip').forEach(c => { const hit = !q || inCat || c.dataset.type.includes(q); c.hidden = !hit; any = any || hit; });
+    g.hidden = !any;
+  });
+  $('catNone').hidden = !![...$('catalog').querySelectorAll('.cat-group')].some(g => !g.hidden);
 }
 async function addCustomType(){
   const r = await askForm('自訂家具', [
@@ -1065,10 +1175,14 @@ function delTab(i){ if(doc.tabs.length<=1) return; if(!confirm(`刪除分頁「$
 
 /* ---------- 模式 ---------- */
 function setMode(m){
+  if(m !== 'wall') endWallDraft();
   mode = m;
-  ['Select','Pan','Room','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.setAttribute('aria-pressed', String(mode===x.toLowerCase())); });
-  $('modeHint').textContent = m==='room' ? '拖一個方框，一次生成四面外牆。'
-    : m==='wall' ? '按住拖曳畫一道牆，端點吸附格線。'
+  ['Select','Pan','Room','Wall','Measure'].forEach(x => { const b=$('mode'+x); if(b) b.setAttribute('aria-pressed', String(mode===x.toLowerCase())); });  const hint = $('modeHint');
+  hint.classList.toggle('act', m==='room');
+  if(m==='room'){
+    hint.innerHTML = '拖一個方框生成四面牆，或 <button type="button" id="roomForm">輸入長寬</button>';
+    $('roomForm').onclick = addRoomByForm;
+  } else hint.textContent = m==='wall' ? '點一下起點，再點下一點連續畫牆；點回起點自動封閉，Esc 結束。Shift 可畫斜牆。'
     : m==='pan' ? '拖曳畫布平移；滾輪縮放。'
     : m==='measure' ? '拖一條線量距離（cm）；Esc 清除。'
     : m==='calibrate' ? '在底圖上沿已知長度拖一條線，放開後輸入實際公分。'
@@ -1240,6 +1354,10 @@ function bindUI(){
   $('modeWall').onclick   = () => setMode('wall');
   $('modeMeasure').onclick= () => setMode('measure');
   $('addText').onclick    = addText;
+  $('startRoom').onclick  = addRoomByForm;
+  $('startExample').onclick = loadExample;
+  $('startTrace').onclick = () => { showInsp('house'); $('bgInput').click(); };
+  $('catSearch').oninput  = filterCatalog;
   $('areaChk').onchange   = e => { showAreas=e.target.checked; render(); };
   $('titleChk').onchange  = e => { showTitleBlock=e.target.checked; render(); };
 
@@ -1317,13 +1435,25 @@ function bindUI(){
     if(mode==='pan'){ startPan(e); return; }
     if(e.target===svg){ startMarquee(e); }
   });
+  svg.addEventListener('pointermove', e => { if(wallDraft) drawWallPreview(e); });
+  svg.addEventListener('contextmenu', e => { if(mode==='wall') e.preventDefault(); });
 
   // 鍵盤
   window.addEventListener('keydown', e => {
     if(e.code==='Space' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ spaceDown=true; svg.classList.add('mode-pan'); }
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){ if(!moreMenu.hidden){ closeMore(); return; } const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; } endEdit(); measure=null; clearSel(); render(); return; }
+    if(e.key==='Escape'){
+      const menu = document.querySelector('.menu:not([hidden])');
+      if(menu){ menu.hidden = true; const b = menu.parentElement.querySelector('[aria-expanded]'); if(b){ b.setAttribute('aria-expanded','false'); b.focus(); } return; }
+      const h=$('helpOverlay'); if(h && !h.hidden){ h.hidden=true; $('btnHelp').focus(); return; }
+      if(wallDraft){ endWallDraft(); render(); return; }
+      endEdit(); measure=null; clearSel(); render(); return; }
     if(typing) return;
+    if(!e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat){       // 工具快捷鍵（長按不連發）
+      const t = {v:'select', h:'pan', b:'room', w:'wall', m:'measure'}[e.key.toLowerCase()];
+      if(t){ setMode(t); return; }
+      if(e.key.toLowerCase()==='t'){ addText(); return; }
+    }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateSel(); return; }
